@@ -1,95 +1,125 @@
-import { Component, input, AfterViewInit, ViewChild, inject, OnInit, effect } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
+import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { Priority } from '../../types/priority';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import { PriorityListService } from '../../services/priority-list';
+import { PriorityListDataSource, SortState } from '../../services/priority-list-datasource';
+import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { debounceTime, takeUntil } from 'rxjs/operators';
+
+type SortDirection = 'asc' | 'desc' | null;
+
+interface ColumnDef {
+  key: keyof Priority;
+  label: string;
+  class?: string;
+}
 
 @Component({
   selector: 'app-priority-list',
-  imports: [HlmTableImports, HlmSpinnerImports, ScrollingModule],
+  imports: [HlmTableImports, HlmSpinnerImports, HlmButtonImports, ScrollingModule, FormsModule],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',
   host: {
-    class: 'w-full',
+    class: 'block w-full',
   },
 })
-export class PriorityList implements AfterViewInit, OnInit {
+export class PriorityList implements OnInit, OnDestroy {
   @ViewChild('tableViewport') viewport?: CdkVirtualScrollViewport;
-  priorities = input<Priority[]>([]);
 
-  constructor() {
-    effect(() => {
-      console.log('Priorities changed:', this.priorities());
-      if (!this.viewport) return;
+  private readonly service = inject(PriorityListService);
+  private readonly destroy$ = new Subject<void>();
+  private readonly filterInput$ = new Subject<void>();
 
-      const priorities = this.priorities();
-      if (priorities) {
-        const range = this.viewport.getRenderedRange();
-        console.log(`CDK Viewport Start: ${range.start}, End: ${range.end}`);
-        console.log('Total Priorities:', priorities.length);
-        this.viewport.scrollToIndex(0); // Scroll to top when priorities change
-      }
-    });
-  }
+  dataSource!: PriorityListDataSource;
+  isLoading = signal(false);
+  totalCount = signal(0);
+
+  sortColumn = signal<string | null>(null);
+  sortDirection = signal<SortDirection>(null);
+
+  filters: Record<string, string> = {};
+
+  readonly columns: ColumnDef[] = [
+    { key: 'id', label: 'ID', class: 'w-20' },
+    { key: 'vpo', label: 'VPO' },
+    { key: 'equipment', label: 'Equipment' },
+    { key: 'stepSequence', label: 'Step' },
+    { key: 'priority', label: 'Priority', class: 'w-20' },
+    { key: 'r1', label: 'R1', class: 'w-16 text-right' },
+    { key: 'r2', label: 'R2', class: 'w-16 text-right' },
+    { key: 'vpoForecastQuantity', label: 'Forecast Qty', class: 'text-right' },
+    { key: 'testTimePerUnit', label: 'Test Time', class: 'text-right' },
+  ];
 
   ngOnInit(): void {
-    console.log('Viewport:', this.viewport);
-  }
-  ngAfterViewInit(): void {
-    console.log('Viewport:', this.viewport);
+    this.dataSource = new PriorityListDataSource(this.service);
+
+    this.dataSource.loading$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((loading) => this.isLoading.set(loading));
+
+    this.dataSource.totalCount$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((count) => this.totalCount.set(count));
+
+    // Debounce filter input to avoid spamming API
+    this.filterInput$.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => {
+      this.dataSource.setFilters({ ...this.filters });
+      this.viewport?.scrollToIndex(0);
+    });
+
+    // Initial load
+    this.dataSource.refresh();
   }
 
-  scrollIndexChange(index: number) {
-    console.log('Scrolled to index:', index);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
-    if (this.viewport) {
-      const range = this.viewport.getRenderedRange();
-      console.log(`CDK Viewport Start: ${range.start}, End: ${range.end}`);
+  onSort(column: string): void {
+    if (this.sortColumn() === column) {
+      // Cycle: asc -> desc -> none
+      const current = this.sortDirection();
+      if (current === 'asc') {
+        this.sortDirection.set('desc');
+      } else if (current === 'desc') {
+        this.sortColumn.set(null);
+        this.sortDirection.set(null);
+        this.dataSource.setSort(null);
+        this.viewport?.scrollToIndex(0);
+        return;
+      }
+    } else {
+      this.sortColumn.set(column);
+      this.sortDirection.set('asc');
     }
+
+    this.dataSource.setSort({
+      column: this.sortColumn()!,
+      direction: this.sortDirection()! as 'asc' | 'desc',
+    });
+    this.viewport?.scrollToIndex(0);
   }
 
-  protected _invoices = [
-    {
-      invoice: 'INV001',
-      paymentStatus: 'Paid',
-      totalAmount: '$250.00',
-      paymentMethod: 'Credit Card',
-    },
-    {
-      invoice: 'INV002',
-      paymentStatus: 'Pending',
-      totalAmount: '$150.00',
-      paymentMethod: 'PayPal',
-    },
-    {
-      invoice: 'INV003',
-      paymentStatus: 'Unpaid',
-      totalAmount: '$350.00',
-      paymentMethod: 'Bank Transfer',
-    },
-    {
-      invoice: 'INV004',
-      paymentStatus: 'Paid',
-      totalAmount: '$450.00',
-      paymentMethod: 'Credit Card',
-    },
-    {
-      invoice: 'INV005',
-      paymentStatus: 'Paid',
-      totalAmount: '$550.00',
-      paymentMethod: 'PayPal',
-    },
-    {
-      invoice: 'INV006',
-      paymentStatus: 'Pending',
-      totalAmount: '$200.00',
-      paymentMethod: 'Bank Transfer',
-    },
-    {
-      invoice: 'INV007',
-      paymentStatus: 'Unpaid',
-      totalAmount: '$300.00',
-      paymentMethod: 'Credit Card',
-    },
-  ];
+  onFilterChange(): void {
+    this.filterInput$.next();
+  }
+
+  getSortIcon(column: string): string {
+    if (this.sortColumn() !== column) return '↕';
+    return this.sortDirection() === 'asc' ? '↑' : '↓';
+  }
+
+  getCellValue(item: Priority | undefined, key: keyof Priority): string {
+    if (!item) return '';
+    const val = item[key];
+    if (val === null || val === undefined) return '';
+    if (typeof val === 'boolean') return val ? '✓' : '';
+    return String(val);
+  }
 }
