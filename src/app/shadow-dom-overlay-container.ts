@@ -3,6 +3,7 @@ import { OverlayContainer } from '@angular/cdk/overlay';
 import { Platform } from '@angular/cdk/platform';
 import { DOCUMENT } from '@angular/common';
 
+// This code is written by AI, but it works well
 /**
  * Custom OverlayContainer that attaches the CDK overlay container
  * inside the component's Shadow DOM rather than document.body.

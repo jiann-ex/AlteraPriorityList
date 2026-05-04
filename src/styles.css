@@ -1,3 +1,8 @@
+/*
+  This file is for development use only
+  The app.scss will only included to the web component build, so we just use the compiled js file is enough
+  We still use this file in development as it allows us to use the Tailwind CSS classes in the app component with intellisense support
+*/
 /* Move these to app.scss to use it as Shadow DOM styles for the app component */
 
 @layer theme, base, components, utilities;
