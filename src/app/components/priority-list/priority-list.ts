@@ -1,8 +1,8 @@
-import { Component, input } from '@angular/core';
+import { Component, input, AfterViewInit, ViewChild, inject, OnInit, effect } from '@angular/core';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { Priority } from '../../types/priority';
-import { ScrollingModule } from '@angular/cdk/scrolling';
+import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 
 @Component({
   selector: 'app-priority-list',
@@ -13,8 +13,40 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
     class: 'w-full',
   },
 })
-export class PriorityList {
+export class PriorityList implements AfterViewInit, OnInit {
+  @ViewChild('tableViewport') viewport?: CdkVirtualScrollViewport;
   priorities = input<Priority[]>([]);
+
+  constructor() {
+    effect(() => {
+      console.log('Priorities changed:', this.priorities());
+      if (!this.viewport) return;
+
+      const priorities = this.priorities();
+      if (priorities) {
+        const range = this.viewport.getRenderedRange();
+        console.log(`CDK Viewport Start: ${range.start}, End: ${range.end}`);
+        console.log('Total Priorities:', priorities.length);
+        this.viewport.scrollToIndex(0); // Scroll to top when priorities change
+      }
+    });
+  }
+
+  ngOnInit(): void {
+    console.log('Viewport:', this.viewport);
+  }
+  ngAfterViewInit(): void {
+    console.log('Viewport:', this.viewport);
+  }
+
+  scrollIndexChange(index: number) {
+    console.log('Scrolled to index:', index);
+
+    if (this.viewport) {
+      const range = this.viewport.getRenderedRange();
+      console.log(`CDK Viewport Start: ${range.start}, End: ${range.end}`);
+    }
+  }
 
   protected _invoices = [
     {
