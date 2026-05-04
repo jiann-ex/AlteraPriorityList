@@ -1,3 +1,23 @@
+# This project will build as web component and use in Altera MES frontend project
+
+Use move the main.js to refer it in your frontend project as:
+
+```html
+<altera-app-priority-list></altera-app-priority-list>
+```
+
+# Add Spartan Component
+
+```bash
+ng g @spartan-ng/cli:ui
+```
+
+e.g. Add button component
+
+```
+ng g @spartan-ng/cli:ui button
+```
+
 # AlteraPriorityList
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.8.

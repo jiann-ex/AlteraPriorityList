@@ -13,8 +13,15 @@
     "target": "ES2022",
     "module": "preserve",
     "paths": {
+      "@environment": ["./src/environments/environment.ts"],
       "@spartan-ng/helm/button": ["./libs/ui/button/src/index.ts"],
-      "@spartan-ng/helm/utils": ["./libs/ui/utils/src/index.ts"]
+      "@spartan-ng/helm/utils": ["./libs/ui/utils/src/index.ts"],
+      "@spartan-ng/helm/table": ["./libs/ui/table/src/index.ts"],
+      "@spartan-ng/helm/menubar": ["./libs/ui/menubar/src/index.ts"],
+      "@spartan-ng/helm/dropdown-menu": ["./libs/ui/dropdown-menu/src/index.ts"],
+      "@spartan-ng/helm/icon": ["./libs/ui/icon/src/index.ts"],
+      "@spartan-ng/helm/checkbox": ["./libs/ui/checkbox/src/index.ts"],
+      "@spartan-ng/helm/spinner": ["./libs/ui/spinner/src/index.ts"]
     }
   },
   "angularCompilerOptions": {
