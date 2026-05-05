@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --no-hmr",
     "build": "ng build",
     "build:web-component": "ng build-web-component --output-hashing none",
     "build:webcomponent": "ng build --configuration webcomponent",

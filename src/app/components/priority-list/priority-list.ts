@@ -1,4 +1,13 @@
-import { Component, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  Host,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -11,8 +20,9 @@ import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import type { ColumnDef } from '../../types/column-ref';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
-
-type SortDirection = 'asc' | 'desc' | null;
+import { SortDirection } from '@app-types';
+import { PriorityListTh } from '../priority-list-th/priority-list-th';
+import { HlmDropdownMenuImports, HlmDropdownMenuTrigger } from '@spartan-ng/helm/dropdown-menu';
 
 @Component({
   selector: 'app-priority-list',
@@ -24,6 +34,8 @@ type SortDirection = 'asc' | 'desc' | null;
     FormsModule,
     CdkDropList,
     CdkDrag,
+    PriorityListTh,
+    HlmDropdownMenuImports,
   ],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',

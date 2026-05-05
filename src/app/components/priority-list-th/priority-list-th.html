@@ -1,0 +1,59 @@
+<span class="flex items-center">
+  <span>{{ column().label }}</span>
+  <button class="cursor-pointer" hlmBtn variant="ghost" size="icon-xs">
+    <ng-icon name="lucideSortAsc"></ng-icon>
+  </button>
+</span>
+<ng-template #menu>
+  <hlm-dropdown-menu class="w-56">
+    <!---Sort Options -->
+    <hlm-dropdown-menu-label>Sort</hlm-dropdown-menu-label>
+    <hlm-dropdown-menu-group>
+      <button hlmDropdownMenuItem>
+        <span>Ascending</span>
+        <hlm-dropdown-menu-shortcut>
+          <ng-icon name="lucideSortAsc"></ng-icon>
+        </hlm-dropdown-menu-shortcut>
+      </button>
+
+      <button hlmDropdownMenuItem>
+        <span>Descending</span>
+        <hlm-dropdown-menu-shortcut>
+          <ng-icon name="lucideSortDesc"></ng-icon>
+        </hlm-dropdown-menu-shortcut>
+      </button>
+    </hlm-dropdown-menu-group>
+
+    <hlm-dropdown-menu-separator />
+
+    <hlm-dropdown-menu-group>
+      <hlm-dropdown-menu-label>
+        Filters
+        <hlm-dropdown-menu-shortcut> (xx selected) </hlm-dropdown-menu-shortcut>
+      </hlm-dropdown-menu-label>
+      <!-- Selected Filter Options -->
+      <cdk-virtual-scroll-viewport class="h-[200px]" [itemSize]="32">
+        <!-- @for (option of options(); track option) {
+          <button
+            hlmDropdownMenuCheckbox
+            [checked]="selectedOptions().has(option)"
+            (triggered)="toggleOption(option)"
+          >
+            <hlm-dropdown-menu-checkbox-indicator />
+            <span>{{ option }}</span>
+          </button>
+        } -->
+        <!-- <div *cdkVirtualFor="let option of options()">
+          <button
+            hlmDropdownMenuCheckbox
+            [checked]="selectedOptions().has(option)"
+            (triggered)="toggleOption(option)"
+          >
+            <hlm-dropdown-menu-checkbox-indicator />
+            <span>{{ option }}</span>
+          </button>
+        </div> -->
+      </cdk-virtual-scroll-viewport>
+    </hlm-dropdown-menu-group>
+  </hlm-dropdown-menu>
+</ng-template>

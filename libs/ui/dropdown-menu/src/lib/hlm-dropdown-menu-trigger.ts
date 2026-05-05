@@ -1,5 +1,5 @@
 import { CdkMenuTrigger } from '@angular/cdk/menu';
-import { computed, Directive, effect, inject, input } from '@angular/core';
+import { computed, Directive, effect, inject, input, TemplateRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { createMenuPosition, type MenuAlign, type MenuSide } from '@spartan-ng/brain/core';
 import { injectHlmDropdownMenuConfig } from './hlm-dropdown-menu-token';
@@ -45,5 +45,16 @@ export class HlmDropdownMenuTrigger {
     effect(() => {
       this._cdkTrigger.menuPosition = this._menuPosition();
     });
+  }
+
+  /**
+   * Set menu trigger programatically,
+   *
+   * Tips:
+   * Use @ViewChild to get the menu template and then set it to the trigger
+   * @param menu
+   */
+  setMenuTemplate(menu: TemplateRef<unknown>) {
+    this._cdkTrigger.menuTemplateRef = menu;
   }
 }

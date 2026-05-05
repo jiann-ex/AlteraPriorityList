@@ -14,6 +14,8 @@
     "module": "preserve",
     "paths": {
       "@environment": ["./src/environments/environment.ts"],
+      "@app-types/*": ["./src/app/types/*"],
+      "@app-types": ["./src/app/types/index.ts"],
       "@spartan-ng/helm/button": ["./libs/ui/button/src/index.ts"],
       "@spartan-ng/helm/utils": ["./libs/ui/utils/src/index.ts"],
       "@spartan-ng/helm/table": ["./libs/ui/table/src/index.ts"],
