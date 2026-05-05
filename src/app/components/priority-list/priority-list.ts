@@ -22,7 +22,7 @@ import type { ColumnDef } from '../../types/column-ref';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { SortDirection } from '@app-types';
 import { PriorityListTh } from '../priority-list-th/priority-list-th';
-import { HlmDropdownMenuImports, HlmDropdownMenuTrigger } from '@spartan-ng/helm/dropdown-menu';
+import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 
 @Component({
   selector: 'app-priority-list',

@@ -29,4 +29,12 @@ import { ShadowDomOverlayContainer } from './shadow-dom-overlay-container';
 })
 export class App {
   protected readonly title = signal('AlteraPriorityList');
+
+  toggleDarkMode() {
+    document.documentElement.classList.toggle('dark');
+    const appRoot = document.querySelector('app-root');
+    if (appRoot) {
+      appRoot.classList.toggle('dark');
+    }
+  }
 }
