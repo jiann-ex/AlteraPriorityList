@@ -34,7 +34,7 @@ export class HlmTable {
 })
 export class HlmTHead {
   constructor() {
-    classes(() => '[&_tr]:border-b');
+    classes(() => '[&_tr]:border-b bg-background');
   }
 }
 

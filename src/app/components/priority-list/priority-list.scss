@@ -1,0 +1,11 @@
+.editable-cell {
+  cursor: text;
+  outline: none;
+  min-width: 2rem;
+  transition: box-shadow 0.15s;
+
+  &:focus {
+    box-shadow: inset 0 0 0 1.5px var(--ring);
+    border-radius: 2px;
+  }
+}

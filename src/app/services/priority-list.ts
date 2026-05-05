@@ -40,4 +40,11 @@ export class PriorityListService {
       params,
     });
   }
+
+  updatePriority(id: string, field: 'r1' | 'r2', value: number): Observable<Priority> {
+    return this.httpClient.patch<Priority>(
+      `${this.apiUrl}/api/mes/vpoPriority/${encodeURIComponent(id)}`,
+      { [field]: value },
+    );
+  }
 }

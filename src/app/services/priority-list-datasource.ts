@@ -125,4 +125,14 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
       },
     });
   }
+
+  /** Update a single item in the local cache (after API confirms the save). */
+  updateItem(index: number, field: keyof Priority, value: unknown): void {
+    const current = this.data.value.slice();
+    const item = current[index];
+    if (item) {
+      (current[index] as any) = { ...item, [field]: value };
+      this.data.next(current);
+    }
+  }
 }

@@ -25,12 +25,14 @@
   [itemSize]="40"
   [minBufferPx]="400"
   [maxBufferPx]="800"
+  (scrolledIndexChange)="calculateInverseOfTranslation()"
 >
   <table hlmTable class="w-full">
-    <thead hlmTableHeader class="sticky top-0 z-10 bg-background">
-      <tr hlmTableRow>
+    <thead hlmTableHeader [style.top.px]="inverseOfTranslation()" class="sticky z-100">
+      <tr hlmTableRow cdkDropList (cdkDropListDropped)="dropColumn($event)">
         @for (col of columns; track col.key) {
           <th
+            cdkDrag
             hlmTableHead
             [class]="col.class ?? ''"
             class="cursor-pointer select-none"
@@ -44,11 +46,31 @@
     </thead>
 
     <tbody hlmTableBody>
-      <tr hlmTableRow class="h-[40px]" *cdkVirtualFor="let item of dataSource">
+      <tr
+        hlmTableRow
+        class="h-[40px]"
+        *cdkVirtualFor="let item of dataSource; let rowIndex = index"
+      >
         @for (col of columns; track col.key) {
-          <td hlmTableCell [class]="col.class ?? ''">
-            {{ getCellValue(item, col.key) }}
-          </td>
+          @if (col.editable && item) {
+            <td
+              hlmTableCell
+              [class]="col.class ?? ''"
+              class="editable-cell"
+              contenteditable="true"
+              [attr.data-row]="rowIndex"
+              [attr.data-col]="col.key"
+              (keydown)="onCellKeydown($event, rowIndex, col.key)"
+              (blur)="onCellBlur($event, rowIndex, col.key)"
+              (focus)="onCellFocus($event)"
+            >
+              {{ getCellValue(item, col.key) }}
+            </td>
+          } @else {
+            <td hlmTableCell [class]="col.class ?? ''">
+              {{ getCellValue(item, col.key) }}
+            </td>
+          }
         }
       </tr>
     </tbody>
