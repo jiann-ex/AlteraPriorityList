@@ -23,7 +23,7 @@ import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk
 import { SortDirection } from '@app-types';
 import { PriorityListTh } from '../priority-list-th/priority-list-th';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
-import { HlmGridTableImports } from '../grid-table/hlm-grid-table';
+import { GridTableImports } from '../grid-table/grid-table';
 
 @Component({
   selector: 'app-priority-list',
@@ -37,7 +37,7 @@ import { HlmGridTableImports } from '../grid-table/hlm-grid-table';
     CdkDrag,
     PriorityListTh,
     HlmDropdownMenuImports,
-    HlmGridTableImports,
+    GridTableImports,
   ],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',

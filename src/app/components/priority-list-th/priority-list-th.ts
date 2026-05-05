@@ -21,7 +21,7 @@ const VISIBLE_COUNT = 8; // items visible at once
 const BUFFER = 3; // extra items above/below
 
 @Component({
-  selector: 'th[appPriorityListTh]',
+  selector: '[appPriorityListTh], [appPriorityListCol]',
   imports: [NgIcon, HlmButtonImports, HlmDropdownMenuImports],
   templateUrl: './priority-list-th.html',
   viewProviders: [

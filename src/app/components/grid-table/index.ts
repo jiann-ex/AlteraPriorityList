@@ -1,21 +1,21 @@
 import {
-  HlmGridTable,
-  HlmGridTableBody,
-  HlmGridTableCaption,
-  HlmGridTableCell,
-  HlmGridTableFooter,
-  HlmGridTableHead,
-  HlmGridTableHeader,
-  HlmGridTableRow,
-} from './hlm-grid-table';
+  GridTable,
+  GridTableBody,
+  GridTableCaption,
+  GridTableCell,
+  GridTableFooter,
+  GridTableHead,
+  GridTableHeader,
+  GridTableRow,
+} from './grid-table';
 
 export const GridTableImports = [
-  HlmGridTable,
-  HlmGridTableBody,
-  HlmGridTableCaption,
-  HlmGridTableCell,
-  HlmGridTableFooter,
-  HlmGridTableHead,
-  HlmGridTableHeader,
-  HlmGridTableRow,
+  GridTable,
+  GridTableBody,
+  GridTableCaption,
+  GridTableCell,
+  GridTableFooter,
+  GridTableHead,
+  GridTableHeader,
+  GridTableRow,
 ] as const;

@@ -92,25 +92,84 @@
   }
 </div>
 
-<div hlmGridTable class="grid-cols-2">
-  <div hlmGridTableHeader>
-    <div hlmGridTableRow>
-      <div hlmGridTableHead>ID</div>
-      <div hlmGridTableHead>Name</div>
-      <div hlmGridTableHead>Status</div>
-      <div hlmGridTableHead class="text-right">Amount</div>
+<div class="overflow-x-auto">
+  <div
+    gridTable
+    [style.grid-template-columns]="'80px 1fr 120px 100px 100px 100px 100px 100px 100px'"
+  >
+    <div gridTableHeader>
+      <div
+        gridTableRow
+        cdkDropList
+        cdkDropListOrientation="horizontal"
+        (cdkDropListDropped)="dropColumn($event)"
+      >
+        @for (col of columns; track col.key) {
+          <div
+            cdkDrag
+            gridTableHead
+            appPriorityListTh
+            [column]="col"
+            (sort)="onSort(col.key)"
+            [sortColumn]="sortColumn()"
+            [sortDirection]="sortDirection()"
+          ></div>
+        }
+        <!-- <div gridTableHead>ID</div>
+      <div gridTableHead>Name</div>
+      <div gridTableHead>Status</div>
+      <div gridTableHead class="text-right">Amount</div> -->
+      </div>
     </div>
-  </div>
 
-  <div hlmGridTableBody>
-    <div hlmGridTableRow>
-      <div hlmGridTableCell>001</div>
-      <div hlmGridTableCell>Widget</div>
-      <div hlmGridTableCell>Active</div>
-      <div hlmGridTableCell class="text-right">$100</div>
-    </div>
+    <cdk-virtual-scroll-viewport
+      #tableViewport
+      gridTableBody
+      class="h-[600px] overflow-auto rounded-md border"
+      [itemSize]="40"
+      [minBufferPx]="400"
+      [maxBufferPx]="800"
+      (scrolledIndexChange)="calculateInverseOfTranslation()"
+    >
+      <div
+        gridTableRow
+        class="h-[40px]"
+        *cdkVirtualFor="let item of dataSource; let rowIndex = index"
+      >
+        @for (col of columns; track col.key) {
+          @if (col.editable && item) {
+            <div
+              gridTableCell
+              [class]="col.class ?? ''"
+              class="editable-cell"
+              contenteditable="true"
+              [attr.data-row]="rowIndex"
+              [attr.data-col]="col.key"
+              (keydown)="onCellKeydown($event, rowIndex, col.key)"
+              (blur)="onCellBlur($event, rowIndex, col.key)"
+              (focus)="onCellFocus($event)"
+            >
+              {{ getCellValue(item, col.key) }}
+            </div>
+          } @else {
+            <div gridTableCell [class]="col.class ?? ''">
+              {{ getCellValue(item, col.key) }}
+            </div>
+          }
+        }
+      </div>
+    </cdk-virtual-scroll-viewport>
   </div>
 </div>
+
+<!-- <div gridTableBody>
+    <div gridTableRow>
+      <div gridTableCell>001</div>
+      <div gridTableCell>Widget fsdg sgsgdf gdffgfg</div>
+      <div gridTableCell>Active</div>
+      <div gridTableCell class="text-right">$100</div>
+    </div>
+  </div> -->
 
 <!-- Status bar -->
 <div class="text-muted-foreground flex items-center gap-2 px-2 py-1 text-xs">
