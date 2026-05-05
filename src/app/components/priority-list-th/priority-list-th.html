@@ -3,6 +3,12 @@
   <button class="cursor-pointer" hlmBtn variant="ghost" size="icon-xs">
     <ng-icon name="lucideSortAsc"></ng-icon>
   </button>
+  @if (selectedOptions().size > 0) {
+    <button class="cursor-pointer" hlmBtn variant="ghost" size="icon-xs">
+      <ng-icon name="lucideFilterX"></ng-icon>
+    </button>
+  }
+  <ng-icon name="lucideFilter" class="text-xs"></ng-icon>
 </span>
 <ng-template #menu>
   <hlm-dropdown-menu class="w-56">
@@ -29,31 +35,45 @@
     <hlm-dropdown-menu-group>
       <hlm-dropdown-menu-label>
         Filters
-        <hlm-dropdown-menu-shortcut> (xx selected) </hlm-dropdown-menu-shortcut>
+        <hlm-dropdown-menu-shortcut>
+          ({{ selectedOptions().size }} selected)
+        </hlm-dropdown-menu-shortcut>
       </hlm-dropdown-menu-label>
-      <!-- Selected Filter Options -->
-      <cdk-virtual-scroll-viewport class="h-[200px]" [itemSize]="32">
-        <!-- @for (option of options(); track option) {
-          <button
-            hlmDropdownMenuCheckbox
-            [checked]="selectedOptions().has(option)"
-            (triggered)="toggleOption(option)"
-          >
-            <hlm-dropdown-menu-checkbox-indicator />
-            <span>{{ option }}</span>
-          </button>
-        } -->
-        <!-- <div *cdkVirtualFor="let option of options()">
-          <button
-            hlmDropdownMenuCheckbox
-            [checked]="selectedOptions().has(option)"
-            (triggered)="toggleOption(option)"
-          >
-            <hlm-dropdown-menu-checkbox-indicator />
-            <span>{{ option }}</span>
-          </button>
-        </div> -->
-      </cdk-virtual-scroll-viewport>
+      <button
+        hlmDropdownMenuItem
+        [variant]="'destructive'"
+        [disabled]="selectedOptions().size === 0"
+      >
+        Clear All
+        <hlm-dropdown-menu-shortcut>
+          <ng-icon class="text-red-500" name="lucideTrash"></ng-icon>
+        </hlm-dropdown-menu-shortcut>
+      </button>
+      <!-- Lightweight virtual scroll (no nested cdk-virtual-scroll-viewport) -->
+      <div
+        class="relative overflow-y-auto"
+        style="height: 256px"
+        (scroll)="onOptionsScroll($event)"
+      >
+        <div [style.height.px]="totalHeight()" class="relative">
+          @for (entry of visibleOptions(); track entry.index) {
+            <div
+              class="absolute left-0 right-0"
+              [style.top.px]="entry.offsetTop"
+              [style.height.px]="optionHeight"
+            >
+              <button
+                hlmDropdownMenuCheckbox
+                [checked]="selectedOptions().has(entry.option)"
+                (triggered)="toggleOption(entry.option)"
+              >
+                <hlm-dropdown-menu-checkbox-indicator />
+                <span class="text-nowrap text-ellipsis overflow-hidden">{{ entry.option }}</span>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
     </hlm-dropdown-menu-group>
   </hlm-dropdown-menu>
 </ng-template>

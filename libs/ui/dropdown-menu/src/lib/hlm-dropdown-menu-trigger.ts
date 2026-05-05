@@ -57,4 +57,8 @@ export class HlmDropdownMenuTrigger {
   setMenuTemplate(menu: TemplateRef<unknown>) {
     this._cdkTrigger.menuTemplateRef = menu;
   }
+
+  get opened() {
+    return this._cdkTrigger.opened;
+  }
 }
