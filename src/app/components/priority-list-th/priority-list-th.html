@@ -13,6 +13,11 @@
     }
   </div>
 </div>
+<!-- Resize handle -->
+<div
+  class="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/50 active:bg-primary"
+  (mousedown)="onResizeStart($event)"
+></div>
 <ng-template #menu>
   <hlm-dropdown-menu class="w-56">
     <!---Sort Options -->

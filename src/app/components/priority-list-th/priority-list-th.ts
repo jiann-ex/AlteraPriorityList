@@ -1,8 +1,11 @@
 import {
   Component,
   computed,
+  DestroyRef,
+  ElementRef,
   inject,
   input,
+  NgZone,
   OnInit,
   output,
   signal,
@@ -34,7 +37,7 @@ const BUFFER = 3; // extra items above/below
     }),
   ],
   host: {
-    class: 'cursor-pointer select-none',
+    class: 'relative cursor-pointer select-none',
   },
   hostDirectives: [
     {
@@ -57,10 +60,14 @@ export class PriorityListTh implements OnInit {
   /** Required to know the the current column is sorted then need to know its direction */
   sortDirection = input.required<SortDirection>();
   widths = input<Record<string, number>>({});
+  widthChange = output<number>();
 
   private readonly _dropdownMenuHost: HlmDropdownMenuTrigger = inject(HlmDropdownMenuTrigger, {
     host: true,
   });
+  private readonly _el = inject(ElementRef<HTMLElement>);
+  private readonly _zone = inject(NgZone);
+  private readonly _destroyRef = inject(DestroyRef);
 
   constructor() {}
 
@@ -109,5 +116,39 @@ export class PriorityListTh implements OnInit {
       selected.add(option);
     }
     this.selectedOptions.set(new Set(selected));
+  }
+
+  onResizeStart(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const startX = event.clientX;
+    const startWidth = this._el.nativeElement.getBoundingClientRect().width;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.max(50, startWidth + (e.clientX - startX));
+      this.widthChange.emit(newWidth);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+
+      // When resize end, it register a click causing the dropdown menu to open,
+      // so we need to close it programmatically
+      // visually should not have any dropdown appear after resized
+      setTimeout(() => {
+        this._dropdownMenuHost.close(); // Close the menu when resizing ends
+      });
+    };
+    // Change the cursor to prevent mouse flicketing between col-resize and default when resizing
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    this._destroyRef.onDestroy(() => onMouseUp());
   }
 }

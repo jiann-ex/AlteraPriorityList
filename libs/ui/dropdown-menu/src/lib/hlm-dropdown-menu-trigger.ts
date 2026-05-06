@@ -61,4 +61,9 @@ export class HlmDropdownMenuTrigger {
   get opened() {
     return this._cdkTrigger.opened;
   }
+
+  /** Explicitly close the menu */
+  close() {
+    this._cdkTrigger.close();
+  }
 }

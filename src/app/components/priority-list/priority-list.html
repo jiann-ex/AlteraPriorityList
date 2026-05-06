@@ -82,7 +82,7 @@
 
 <!-- Filter row -->
 <div class="flex flex-wrap gap-2 p-2">
-  @for (col of columns; track col.key) {
+  @for (col of columns(); track col.key) {
     <input
       class="border-input bg-background text-foreground placeholder:text-muted-foreground rounded-md border px-2 py-1 text-sm"
       [placeholder]="'Filter ' + col.label"
@@ -93,10 +93,7 @@
 </div>
 
 <div class="overflow-x-auto">
-  <div
-    gridTable
-    [style.grid-template-columns]="'80px 1fr 120px 100px 100px 100px 100px 100px 100px'"
-  >
+  <div gridTable [style.grid-template-columns]="gridTemplateColumns() + ' minmax(0, 1fr)'">
     <div gridTableHeader>
       <div
         gridTableRow
@@ -104,7 +101,7 @@
         cdkDropListOrientation="horizontal"
         (cdkDropListDropped)="dropColumn($event)"
       >
-        @for (col of columns; track col.key) {
+        @for (col of columns(); track col.key) {
           <div
             cdkDrag
             gridTableHead
@@ -112,15 +109,13 @@
             hlmTooltip
             [hlmTooltip]="col.label"
             [column]="col"
+            [widths]="columnWidths()"
+            (widthChange)="onColumnResize(col.key, $event)"
             (sort)="onSort(col.key)"
             [sortColumn]="sortColumn()"
             [sortDirection]="sortDirection()"
           ></div>
         }
-        <!-- <div gridTableHead>ID</div>
-      <div gridTableHead>Name</div>
-      <div gridTableHead>Status</div>
-      <div gridTableHead class="text-right">Amount</div> -->
       </div>
     </div>
 
@@ -131,14 +126,13 @@
       [itemSize]="40"
       [minBufferPx]="400"
       [maxBufferPx]="800"
-      (scrolledIndexChange)="calculateInverseOfTranslation()"
     >
       <div
         gridTableRow
         class="h-[40px]"
         *cdkVirtualFor="let item of dataSource; let rowIndex = index"
       >
-        @for (col of columns; track col.key) {
+        @for (col of columns(); track col.key) {
           @if (col.editable && item) {
             <div
               gridTableCell
@@ -198,7 +192,7 @@
         cdkDropListOrientation="horizontal"
         (cdkDropListDropped)="dropColumn($event)"
       >
-        @for (col of columns; track col.key) {
+        @for (col of columns(); track col.key) {
           <th
             cdkDrag
             hlmTableHead
@@ -217,7 +211,7 @@
         class="h-[40px]"
         *cdkVirtualFor="let item of dataSource; let rowIndex = index"
       >
-        @for (col of columns; track col.key) {
+        @for (col of columns(); track col.key) {
           @if (col.editable && item) {
             <td
               hlmTableCell

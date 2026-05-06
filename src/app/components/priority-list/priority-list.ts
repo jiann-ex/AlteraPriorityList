@@ -1,10 +1,12 @@
 import {
   Component,
+  computed,
   ElementRef,
   Host,
   inject,
   OnDestroy,
   OnInit,
+  Signal,
   signal,
   ViewChild,
 } from '@angular/core';
@@ -22,6 +24,7 @@ import type { ColumnDef } from '../../types/column-def';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { SortDirection } from '@app-types';
 import { PriorityListTh } from '../priority-list-th/priority-list-th';
+import { createColumnWidths } from '../priority-list-th';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { GridTableImports } from '../grid-table/grid-table';
 import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
@@ -63,17 +66,31 @@ export class PriorityList implements OnInit, OnDestroy {
 
   filters: Record<string, string> = {};
 
-  readonly columns: ColumnDef[] = [
-    { key: 'id', label: 'ID', class: 'w-20' },
+  readonly columns = signal<ColumnDef[]>([
+    { key: 'id', label: 'ID' },
     { key: 'vpo', label: 'VPO' },
     { key: 'equipment', label: 'Equipment' },
     { key: 'stepSequence', label: 'Step' },
-    { key: 'priority', label: 'Priority', class: 'w-20' },
+    { key: 'priority', label: 'Priority' },
     { key: 'r1', label: 'R1', class: 'w-16 text-right', editable: true },
     { key: 'r2', label: 'R2', class: 'w-16 text-right', editable: true },
     { key: 'vpoForecastQuantity', label: 'Forecast Qty', class: 'text-right' },
     { key: 'testTimePerUnit', label: 'Test Time', class: 'text-right' },
-  ];
+  ]);
+
+  columnWidths = signal<Record<string, number>>(
+    createColumnWidths(this.columns().map((c) => c.key)),
+  );
+
+  gridTemplateColumns = computed(() => {
+    const widths = this.columnWidths();
+    const columns = this.columns();
+    return columns.map((col) => `${widths[col.key]}px`).join(' ');
+  });
+
+  onColumnResize(columnKey: string, width: number): void {
+    this.columnWidths.update((prev) => ({ ...prev, [columnKey]: width }));
+  }
 
   ngOnInit(): void {
     this.dataSource = new PriorityListDataSource(this.service);
@@ -117,8 +134,9 @@ export class PriorityList implements OnInit, OnDestroy {
   }
 
   dropColumn(event: CdkDragDrop<ColumnDef[]>) {
-    console.log('Column drop event:', event);
-    moveItemInArray(this.columns, event.previousIndex, event.currentIndex);
+    const columns = this.columns();
+    moveItemInArray(columns, event.previousIndex, event.currentIndex);
+    this.columns.set(columns.splice(0)); // Trigger change detection
   }
 
   onSort(column: string): void {
@@ -168,9 +186,11 @@ export class PriorityList implements OnInit, OnDestroy {
   private readonly el = inject(ElementRef);
 
   /** Editable column keys for navigation ordering */
-  private readonly editableKeys: (keyof Priority)[] = this.columns
-    .filter((c) => c.editable)
-    .map((c) => c.key);
+  private readonly editableKeys: Signal<(keyof Priority)[]> = computed(() =>
+    this.columns()
+      .filter((c) => c.editable)
+      .map((c) => c.key),
+  );
 
   /**
    * Handle keydown on a contenteditable cell.
@@ -213,7 +233,7 @@ export class PriorityList implements OnInit, OnDestroy {
             this.focusCell(rowIndex, prevCol);
           } else {
             // Wrap to last editable col of previous row
-            this.focusCell(rowIndex - 1, this.editableKeys[this.editableKeys.length - 1]);
+            this.focusCell(rowIndex - 1, this.editableKeys()[this.editableKeys().length - 1]);
           }
         }
         break;
@@ -226,7 +246,7 @@ export class PriorityList implements OnInit, OnDestroy {
             this.focusCell(rowIndex, nextCol);
           } else {
             // Wrap to first editable col of next row
-            this.focusCell(rowIndex + 1, this.editableKeys[0]);
+            this.focusCell(rowIndex + 1, this.editableKeys()[0]);
           }
         }
         break;
@@ -241,7 +261,9 @@ export class PriorityList implements OnInit, OnDestroy {
           // Wrap to next/prev row
           const nextRow = rowIndex + direction;
           const wrapCol =
-            direction > 0 ? this.editableKeys[0] : this.editableKeys[this.editableKeys.length - 1];
+            direction > 0
+              ? this.editableKeys()[0]
+              : this.editableKeys()[this.editableKeys().length - 1];
           this.focusCell(nextRow, wrapCol);
         }
         break;
@@ -304,18 +326,8 @@ export class PriorityList implements OnInit, OnDestroy {
     current: keyof Priority,
     direction: number,
   ): keyof Priority | null {
-    const idx = this.editableKeys.indexOf(current);
+    const idx = this.editableKeys().indexOf(current);
     const next = idx + direction;
-    return next >= 0 && next < this.editableKeys.length ? this.editableKeys[next] : null;
-  }
-
-  private isCaretAtStart(el: HTMLElement): boolean {
-    const sel = window.getSelection();
-    return !sel || sel.anchorOffset === 0;
-  }
-
-  private isCaretAtEnd(el: HTMLElement): boolean {
-    const sel = window.getSelection();
-    return !sel || sel.anchorOffset === (el.textContent?.length ?? 0);
+    return next >= 0 && next < this.editableKeys().length ? this.editableKeys()[next] : null;
   }
 }
