@@ -1,14 +1,15 @@
 import {
-  AfterViewInit,
   Component,
   computed,
+  inject,
   input,
+  OnInit,
   output,
   signal,
   TemplateRef,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
-import { ColumnDef } from '../../types/column-ref';
+import { ColumnDef } from '../../types/column-def';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideFilterX, lucideSortAsc, lucideSortDesc, lucideTrash } from '@ng-icons/lucide';
 import { SortDirection } from '@app-types';
@@ -41,8 +42,12 @@ const BUFFER = 3; // extra items above/below
     },
   ],
 })
-export class PriorityListTh implements AfterViewInit {
-  @ViewChild('menu') menu!: TemplateRef<unknown>;
+export class PriorityListTh implements OnInit {
+  /**
+   * With required, this will make sure the template can be access ngOnInit lifecycle,
+   * so we can set it to dropdown menu trigger, if not required then the template will be undefined in ngOnInit and we cant set it to dropdown menu trigger
+   */
+  private readonly _menu = viewChild.required<TemplateRef<unknown>>('menu');
 
   column = input.required<ColumnDef>();
   /** Emit when the sort direction changes */
@@ -51,8 +56,20 @@ export class PriorityListTh implements AfterViewInit {
   sortColumn = input.required<string | null>();
   /** Required to know the the current column is sorted then need to know its direction */
   sortDirection = input.required<SortDirection>();
+  widths = input<Record<string, number>>({});
 
-  constructor(private host: HlmDropdownMenuTrigger) {}
+  private readonly _dropdownMenuHost: HlmDropdownMenuTrigger = inject(HlmDropdownMenuTrigger, {
+    host: true,
+  });
+
+  constructor() {}
+
+  ngOnInit(): void {
+    this._dropdownMenuHost.setMenuTemplate(this._menu());
+    this._dropdownMenuHost.opened.pipe().subscribe(() => {
+      this.scrollTop.set(0);
+    });
+  }
 
   protected options = signal<string[]>(
     Array.from({ length: 100000 }, (_, i) =>
@@ -66,7 +83,6 @@ export class PriorityListTh implements AfterViewInit {
   protected scrollTop = signal(0);
 
   protected readonly totalHeight = computed(() => this.options().length * OPTION_HEIGHT);
-
   protected readonly visibleOptions = computed(() => {
     const top = this.scrollTop();
     const startIdx = Math.max(0, Math.floor(top / OPTION_HEIGHT) - BUFFER);
@@ -83,18 +99,6 @@ export class PriorityListTh implements AfterViewInit {
   onOptionsScroll(event: Event): void {
     const target = event.target as HTMLElement;
     this.scrollTop.set(target.scrollTop);
-  }
-
-  ngAfterViewInit(): void {
-    if (this.host && this.menu) {
-      setTimeout(() => {
-        this.host.setMenuTemplate(this.menu);
-        this.host.opened.pipe().subscribe(() => {
-          // reset scroll when menu opens
-          this.scrollTop.set(0);
-        });
-      });
-    }
   }
 
   protected toggleOption(option: string): void {

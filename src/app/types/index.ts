@@ -1,4 +1,4 @@
 export * from './priority';
 export * from './paged-list';
-export * from './column-ref';
+export * from './column-def';
 export * from './sort-direction';

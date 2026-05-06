@@ -109,6 +109,8 @@
             cdkDrag
             gridTableHead
             appPriorityListTh
+            hlmTooltip
+            [hlmTooltip]="col.label"
             [column]="col"
             (sort)="onSort(col.key)"
             [sortColumn]="sortColumn()"

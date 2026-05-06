@@ -18,12 +18,13 @@ import { PriorityListDataSource, SortState } from '../../services/priority-list-
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
-import type { ColumnDef } from '../../types/column-ref';
+import type { ColumnDef } from '../../types/column-def';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { SortDirection } from '@app-types';
 import { PriorityListTh } from '../priority-list-th/priority-list-th';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { GridTableImports } from '../grid-table/grid-table';
+import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
 
 @Component({
   selector: 'app-priority-list',
@@ -38,6 +39,7 @@ import { GridTableImports } from '../grid-table/grid-table';
     PriorityListTh,
     HlmDropdownMenuImports,
     GridTableImports,
+    HlmTooltipImports,
   ],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',

@@ -1,14 +1,18 @@
-<span class="flex items-center">
-  <span>{{ column().label }}</span>
-  <button class="cursor-pointer" hlmBtn variant="ghost" size="icon-xs">
-    <ng-icon name="lucideSortAsc"></ng-icon>
-  </button>
-  @if (selectedOptions().size > 0) {
+<div class="flex justify-between items-center w-full">
+  <div [ariaLabel]="column().label" class="flex-1 text-nowrap text-ellipsis overflow-hidden">
+    {{ column().label }}
+  </div>
+  <div class="flex-none">
     <button class="cursor-pointer" hlmBtn variant="ghost" size="icon-xs">
-      <ng-icon name="lucideFilterX"></ng-icon>
+      <ng-icon name="lucideSortAsc"></ng-icon>
     </button>
-  }
-</span>
+    @if (selectedOptions().size > 0) {
+      <button class="cursor-pointer" hlmBtn variant="ghost" size="icon-xs">
+        <ng-icon name="lucideFilterX"></ng-icon>
+      </button>
+    }
+  </div>
+</div>
 <ng-template #menu>
   <hlm-dropdown-menu class="w-56">
     <!---Sort Options -->
