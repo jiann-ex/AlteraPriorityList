@@ -28,6 +28,7 @@ import { createColumnWidths } from '../priority-list-th';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { GridTableImports } from '../grid-table/grid-table';
 import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
+import { Grid, GridRow, GridCell, GridCellWidget } from '@angular/aria/grid';
 
 @Component({
   selector: 'app-priority-list',
@@ -43,6 +44,10 @@ import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
     HlmDropdownMenuImports,
     GridTableImports,
     HlmTooltipImports,
+    Grid,
+    GridRow,
+    GridCell,
+    GridCellWidget,
   ],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',
