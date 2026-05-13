@@ -1,3 +1,4 @@
+import { Grid, GridCell, GridRow } from '@angular/aria/grid';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { isPlatformServer } from '@angular/common';
 import {
@@ -21,10 +22,19 @@ import { classes } from '@spartan-ng/helm/utils';
     role: 'table',
     'data-slot': 'grid-table',
   },
+  hostDirectives: [
+    {
+      directive: Grid,
+      inputs: ['enableSelection: enableSelection'],
+    },
+  ],
 })
 export class GridTable {
+  //private readonly _grid = inject(Grid, { self: true });
+
   constructor() {
     classes(() => 'grid w-full caption-bottom text-sm');
+    //console.log('GridTable initialized with grid instance:', this._grid.);
   }
 }
 
@@ -84,6 +94,12 @@ export class GridTableBody implements AfterViewInit, OnDestroy {
 
     if (!wrapper) return;
 
+    if (this.el.nativeElement.tagName === 'CDK-VIRTUAL-SCROLL-VIEWPORT') {
+      this.el.nativeElement.style['overflow-x'] = 'hidden'; // prevent double scrollbars
+      this.el.nativeElement.style['scrollbar-gutter'] = 'stable';
+    }
+
+    wrapper.style.overflow = 'hidden'; // prevent double scrollbars
     // Apply grid layout to the content wrapper
     this.syncColumnsToWrapper(wrapper);
 
@@ -135,6 +151,7 @@ export class GridTableFooter {
     role: 'row',
     'data-slot': 'grid-table-row',
   },
+  hostDirectives: [GridRow],
 })
 export class GridTableRow {
   constructor() {
@@ -167,6 +184,7 @@ export class GridTableHead {
     role: 'cell',
     'data-slot': 'grid-table-cell',
   },
+  hostDirectives: [GridCell],
 })
 export class GridTableCell {
   constructor() {
