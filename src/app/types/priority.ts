@@ -1,8 +1,10 @@
+import { PagedList } from './paged-list';
+
 export interface Priority {
   id: string;
   priority: boolean;
-  r1: number;
-  r2: number;
+  r1: number | null;
+  r2: number | null;
   vpo: string;
   equipment: string;
   stepSequence: string;
@@ -14,6 +16,14 @@ export interface Priority {
 export const mapPriorityFrom = (data: any): Priority =>
   ({
     id: data.id,
+    priority: data.isPriority,
+    r1: data.priorityR1,
+    r2: data.priorityR2,
+    vpo: data.vpo,
+    equipment: data.equipment,
+    stepSequence: data.stepSeq,
+    vpoForecastQuantity: data.vpoForecastQuantity,
+    testTimePerUnit: data.testPerUnit,
   }) as Priority;
 /** Map from Priority to API request */
 export const mapPriorityTo = (priority: Priority): any =>

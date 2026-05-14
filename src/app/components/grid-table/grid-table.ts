@@ -75,9 +75,9 @@ export class GridTableHeader implements OnDestroy {
       // Check sticky and handle inverse of translation calculation to keep the sticky header in place when virtual scrolling
       // Also keep watching sticky state and to unsubscribe from scroll changes when sticky is turned off to prevent unnecessary calculations
       if (this.viewport && this.sticky()) {
-        this._scrollIndexChangeSubscription = this.viewport
-          .elementScrolled()
-          .subscribe(() => this.calculateInverseOfTranslation());
+        this._scrollIndexChangeSubscription = this.viewport.scrolledIndexChange.subscribe(() =>
+          this.calculateInverseOfTranslation(),
+        );
       } else {
         this._scrollIndexChangeSubscription?.unsubscribe();
         this._scrollIndexChangeSubscription = null;
@@ -223,6 +223,37 @@ export class GridTableRow {
       () =>
         'grid grid-cols-subgrid col-span-full border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted has-aria-expanded:bg-muted/15',
     );
+  }
+}
+
+@Directive({
+  selector: '[gridTableGroupRow]',
+  host: {
+    role: 'row',
+    'data-slot': 'grid-table-group-row',
+    '[attr.aria-expanded]': 'expanded()',
+    '(click)': 'toggle()',
+    '(keydown.enter)': 'toggle()',
+    '(keydown.space)': 'toggle(); $event.preventDefault()',
+    tabindex: '0',
+  },
+  hostDirectives: [GridRow],
+})
+export class GridTableGroupRow {
+  readonly expanded = model<boolean>(true);
+  readonly toggled = output<boolean>();
+
+  constructor() {
+    classes(
+      () =>
+        'grid grid-cols-subgrid col-span-full border-b transition-colors bg-muted/30 hover:bg-muted/50 cursor-pointer select-none font-medium',
+    );
+  }
+
+  toggle(): void {
+    const next = !this.expanded();
+    this.expanded.set(next);
+    this.toggled.emit(next);
   }
 }
 
@@ -446,6 +477,7 @@ export const GridTableImports = [
   GridTableBody,
   GridTableFooter,
   GridTableRow,
+  GridTableGroupRow,
   GridTableHead,
   GridTableCell,
   GridTableCellInput,

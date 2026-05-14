@@ -113,159 +113,86 @@
     </div>
 
     <div gridTableBody>
-      <div
-        gridTableRow
-        class="h-[40px]"
-        *cdkVirtualFor="let item of dataSource; let rowIndex = index"
-      >
-        @for (col of columns(); let colIndex = $index; track col.key) {
-          <!-- @if (col.editable && item) {
-            <div
-              gridTableCell
-              [class]="col.class ?? ''"
-              class="editable-cell"
-              contenteditable="true"
-              [attr.data-row]="rowIndex"
-              [attr.data-col]="col.key"
-              (keydown)="onCellKeydown($event, rowIndex, col.key)"
-              (blur)="onCellBlur($event, rowIndex, col.key)"
-              (focus)="onCellFocus($event)"
-            >
-              {{ getCellValue(item, col.key) }}
-            </div>
-          } @else {
-            <div gridTableCell (selected)="gridActive()" [class]="col.class ?? ''">
-              {{ getCellValue(item, col.key) }}
-            </div>
-          } -->
-          <!-- <div
-            gridTableCell
-            (activated)="gridActive()"
-            [rowIndex]="rowIndex"
-            [colIndex]="colIndex"
-            [class]="col.class ?? ''"
-            [contentEditable]="col.editable ?? false"
-            (input)="onCellInput($event, rowIndex, col.key)"
+      <ng-container *cdkVirtualFor="let row of groupedSource; let rowIndex = index">
+        @if (row.type === 'group') {
+          <div
+            gridTableGroupRow
+            class="h-[40px]"
+            [expanded]="row.expanded"
+            (toggled)="onGroupToggle(row.key)"
           >
-            {{ getCellValue(item, col.key) }}
-          </div> -->
-          @if (col.editable && item) {
-            @if (col.key === 'priority') {
-              <div
-                gridTableCellCheckbox
-                (activated)="gridActive()"
-                [rowIndex]="rowIndex"
-                [colIndex]="colIndex"
-                [class]="col.class ?? ''"
-                [ngModel]="item[col.key]"
-                (ngModelChange)="onCellInput($event, rowIndex, col.key)"
-              ></div>
-            } @else {
-              <div
-                gridTableCellInput
-                (activated)="gridActive()"
-                [rowIndex]="rowIndex"
-                [colIndex]="colIndex"
-                [class]="col.class ?? ''"
-                [ngModel]="item[col.key]"
-                (ngModelChange)="onCellInput($event, rowIndex, col.key)"
-              ></div>
-            }
-          } @else {
             <div
               gridTableCell
-              (activated)="gridActive()"
               [rowIndex]="rowIndex"
-              [colIndex]="colIndex"
-              [class]="col.class ?? ''"
+              [colIndex]="0"
+              class="col-span-full flex items-center gap-2 font-medium"
             >
-              {{ getCellValue(item, col.key) }}
+              <span class="text-xs">{{ row.expanded ? '▼' : '▶' }}</span>
+              {{ row.label }}
             </div>
-          }
+          </div>
+        } @else if (!row.item) {
+          <!-- Placeholder row for unfetched data -->
+          <div gridTableRow class="h-[40px] animate-pulse">
+            @for (col of columns(); let colIndex = $index; track col.key) {
+              <div
+                gridTableCell
+                [rowIndex]="rowIndex"
+                [colIndex]="colIndex"
+                [class]="col.class ?? ''"
+              >
+                <hlm-skeleton class="h-4 w-full" />
+              </div>
+            }
+          </div>
+        } @else {
+          <div gridTableRow class="h-[40px]">
+            @for (col of columns(); let colIndex = $index; track col.key) {
+              @if (col.editable && row.item) {
+                @if (col.key === 'priority') {
+                  <div
+                    gridTableCellCheckbox
+                    (activated)="gridActive()"
+                    [rowIndex]="rowIndex"
+                    [colIndex]="colIndex"
+                    [class]="col.class ?? ''"
+                    [ngModel]="row.item[col.key]"
+                    (ngModelChange)="onCellInput($event, rowIndex, col.key)"
+                  ></div>
+                } @else {
+                  <div
+                    gridTableCellInput
+                    (activated)="gridActive()"
+                    [rowIndex]="rowIndex"
+                    [colIndex]="colIndex"
+                    [class]="col.class ?? ''"
+                    [ngModel]="row.item[col.key]"
+                    (ngModelChange)="onCellInput($event, rowIndex, col.key)"
+                  ></div>
+                }
+              } @else {
+                <div
+                  gridTableCell
+                  (activated)="gridActive()"
+                  [rowIndex]="rowIndex"
+                  [colIndex]="colIndex"
+                  [class]="col.class ?? ''"
+                >
+                  {{ getCellValue(row.item, col.key) }}
+                </div>
+              }
+            }
+          </div>
         }
-      </div>
+      </ng-container>
     </div>
   </div>
 </cdk-virtual-scroll-viewport>
 
-<!-- <div gridTableBody>
-    <div gridTableRow>
-      <div gridTableCell>001</div>
-      <div gridTableCell>Widget fsdg sgsgdf gdffgfg</div>
-      <div gridTableCell>Active</div>
-      <div gridTableCell class="text-right">$100</div>
-    </div>
-  </div> -->
-
 <!-- Status bar -->
 <div class="text-muted-foreground flex items-center gap-2 px-2 py-1 text-xs">
-  <span>{{ totalCount() }} rows</span>
+  <span>{{ groupedSource.total }} rows</span>
   @if (isLoading()) {
     <hlm-spinner size="sm" />
   }
 </div>
-
-<button hlmBtn (click)="testToggleTable.set(!testToggleTable())">Toggle Table</button>
-<!-- Virtual scroll table -->
-@if (testToggleTable()) {
-  <cdk-virtual-scroll-viewport
-    #tableViewport
-    class="h-[600px] overflow-auto rounded-md border"
-    [itemSize]="40"
-    [minBufferPx]="400"
-    [maxBufferPx]="800"
-    (scrolledIndexChange)="calculateInverseOfTranslation()"
-  >
-    <table hlmTable class="w-full">
-      <thead hlmTableHeader [style.top.px]="inverseOfTranslation()" class="sticky z-100">
-        <tr
-          hlmTableRow
-          cdkDropList
-          cdkDropListOrientation="horizontal"
-          (cdkDropListDropped)="dropColumn($event)"
-        >
-          @for (col of columns(); track col.key) {
-            <th
-              cdkDrag
-              hlmTableHead
-              appPriorityListTh
-              [column]="col"
-              (sort)="onSort(col.key)"
-              [sortColumn]="sortColumn()"
-              [sortDirection]="sortDirection()"
-            ></th>
-          }
-        </tr>
-      </thead>
-      <tbody hlmTableBody>
-        <tr
-          hlmTableRow
-          class="h-[40px]"
-          *cdkVirtualFor="let item of dataSource; let rowIndex = index"
-        >
-          @for (col of columns(); track col.key) {
-            @if (col.editable && item) {
-              <td
-                hlmTableCell
-                [class]="col.class ?? ''"
-                class="editable-cell"
-                contenteditable="true"
-                [attr.data-row]="rowIndex"
-                [attr.data-col]="col.key"
-                (keydown)="onCellKeydown($event, rowIndex, col.key)"
-                (blur)="onCellBlur($event, rowIndex, col.key)"
-                (focus)="onCellFocus($event)"
-              >
-                {{ getCellValue(item, col.key) }}
-              </td>
-            } @else {
-              <td hlmTableCell [class]="col.class ?? ''">
-                {{ getCellValue(item, col.key) }}
-              </td>
-            }
-          }
-        </tr>
-      </tbody>
-    </table>
-  </cdk-virtual-scroll-viewport>
-}

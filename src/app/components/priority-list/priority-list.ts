@@ -15,7 +15,12 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { Priority } from '../../types/priority';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { PriorityListService } from '../../services/priority-list';
-import { PriorityListDataSource } from '../../services/priority-list-datasource';
+import {
+  GroupedDataSource,
+  FlatRow,
+  GroupHeaderRow,
+  DataRow,
+} from '../../services/grouped-datasource';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
@@ -27,6 +32,7 @@ import { createColumnWidths } from '../priority-list-th';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { GridTableImports } from '../grid-table/grid-table';
 import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
+import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 
 @Component({
   selector: 'app-priority-list',
@@ -42,6 +48,7 @@ import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
     HlmDropdownMenuImports,
     GridTableImports,
     HlmTooltipImports,
+    HlmSkeletonImports,
   ],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',
@@ -55,7 +62,7 @@ export class PriorityList implements OnInit, OnDestroy {
   private readonly service = inject(PriorityListService);
   private readonly destroy$ = new Subject<void>();
 
-  dataSource!: PriorityListDataSource;
+  groupedSource!: GroupedDataSource<Priority>;
   isLoading = signal(false);
   totalCount = signal(0);
 
@@ -72,8 +79,8 @@ export class PriorityList implements OnInit, OnDestroy {
     { key: 'equipment', label: 'Equipment' },
     { key: 'stepSequence', label: 'Step' },
     { key: 'priority', label: 'Priority', editable: true },
-    { key: 'r1', label: 'R1', class: 'text-right', editable: true },
-    { key: 'r2', label: 'R2', class: 'text-right', editable: true },
+    { key: 'r1', label: 'R1', class: 'text-right', editable: false },
+    { key: 'r2', label: 'R2', class: 'text-right', editable: false },
     { key: 'vpoForecastQuantity', label: 'Forecast Qty', class: 'text-right' },
     { key: 'testTimePerUnit', label: 'Test Time', class: 'text-right' },
   ]);
@@ -93,38 +100,35 @@ export class PriorityList implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.dataSource = new PriorityListDataSource(this.service);
+    this.groupedSource = new GroupedDataSource<Priority>(
+      {
+        groupBy: (item) => String(item.r1),
+        labelFn: (key, count) => `R1: ${key} (${count})`,
+      },
+      (page, pageSize) => {
+        console.log('Fetching page', { page, pageSize });
+        return this.service.getPriorityList({
+          page,
+          pageSize,
+          sort: this.sortColumn() ?? undefined,
+          sortDirection: (this.sortDirection() as 'asc' | 'desc') ?? undefined,
+        });
+      },
+    );
 
-    this.dataSource.loading$
+    this.groupedSource.loading
       .pipe(takeUntil(this.destroy$))
       .subscribe((loading) => this.isLoading.set(loading));
-
-    this.dataSource.totalCount$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((count) => this.totalCount.set(count));
-
-    // Initial load
-    this.dataSource.refresh();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    this.groupedSource?.disconnect();
   }
 
-  inverseOfTranslation = signal<number>(0);
-  /**
-   * Calculate top offset to apply to sticky header cells to counteract the virtual scroll's translateY.
-   * Apply negative number to sticky header to bring header back to the top
-   * @returns
-   */
-  calculateInverseOfTranslation(): void {
-    if (!this.viewport) {
-      this.inverseOfTranslation.set(0);
-      return;
-    }
-    const offset = this.viewport.getOffsetToRenderedContentStart();
-    this.inverseOfTranslation.set(-(offset ?? 0));
+  onGroupToggle(key: string): void {
+    this.groupedSource.toggleGroup(key);
   }
 
   dropColumn(event: CdkDragDrop<ColumnDef[]>) {
@@ -146,7 +150,7 @@ export class PriorityList implements OnInit, OnDestroy {
       } else if (current === 'desc') {
         this.sortColumn.set(null);
         this.sortDirection.set(null);
-        this.dataSource.setSort(null);
+        this.groupedSource.refresh();
         this.viewport?.scrollToIndex(0);
         return;
       }
@@ -155,10 +159,7 @@ export class PriorityList implements OnInit, OnDestroy {
       this.sortDirection.set('asc');
     }
 
-    this.dataSource.setSort({
-      column: this.sortColumn()!,
-      direction: this.sortDirection()! as 'asc' | 'desc',
-    });
+    this.groupedSource.refresh();
     this.viewport?.scrollToIndex(0);
   }
 
@@ -201,8 +202,8 @@ export class PriorityList implements OnInit, OnDestroy {
 
       case 'Escape':
         event.preventDefault();
-        // Revert content from dataSource
-        const item = this.dataSource['data'].value[rowIndex];
+        // Revert content from grouped source
+        const item = this.groupedSource.getItemAtFlatIndex(rowIndex);
         if (item) {
           target.textContent = String((item as any)[colKey] ?? '');
         }
@@ -272,16 +273,16 @@ export class PriorityList implements OnInit, OnDestroy {
 
     if (isNaN(numValue)) {
       // Revert invalid input
-      const item = this.dataSource['data'].value[rowIndex];
+      const item = this.groupedSource.getItemAtFlatIndex(rowIndex);
       if (item) target.textContent = String((item as any)[colKey] ?? '');
       return;
     }
 
-    const item = this.dataSource['data'].value[rowIndex];
+    const item = this.groupedSource.getItemAtFlatIndex(rowIndex);
     if (!item || (item as any)[colKey] === numValue) return;
 
     // Optimistic local update
-    this.dataSource.updateItem(rowIndex, colKey, numValue);
+    this.groupedSource.updateItemAtFlatIndex(rowIndex, colKey, numValue);
 
     // Persist to backend
     this.service
@@ -290,7 +291,7 @@ export class PriorityList implements OnInit, OnDestroy {
       .subscribe({
         error: () => {
           // Revert on failure
-          this.dataSource.updateItem(rowIndex, colKey, (item as any)[colKey]);
+          this.groupedSource.updateItemAtFlatIndex(rowIndex, colKey, (item as any)[colKey]);
           target.textContent = String((item as any)[colKey] ?? '');
         },
       });

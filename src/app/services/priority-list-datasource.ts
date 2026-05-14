@@ -28,6 +28,7 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
 
   readonly loading$ = this.loading.asObservable();
   readonly totalCount$ = this.totalCount.asObservable();
+  readonly data$ = this.data.asObservable();
 
   get length(): number {
     return this.totalCount.value;
@@ -107,8 +108,10 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
       filters: this.filters,
     };
 
+    console.log('Fetching page with query:', query);
     this.service.getPriorityList(query).subscribe({
       next: (response) => {
+        console.log('Received response for page', response);
         const total = response.count;
         this.totalCount.next(total);
 
