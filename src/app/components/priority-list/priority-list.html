@@ -92,9 +92,14 @@
   }
 </div>
 
-<div class="overflow-x-auto">
+<cdk-virtual-scroll-viewport
+  class="h-[600px] rounded-md border"
+  [itemSize]="40"
+  [minBufferPx]="400"
+  [maxBufferPx]="800"
+>
   <div gridTable [style.grid-template-columns]="gridTemplateColumns() + ' minmax(0, 1fr)'">
-    <div gridTableHeader>
+    <div gridTableHeader sticky>
       <div
         gridTableRow
         cdkDropList
@@ -119,21 +124,14 @@
       </div>
     </div>
 
-    <cdk-virtual-scroll-viewport
-      #tableViewport
-      gridTableBody
-      class="h-[600px] rounded-md border"
-      [itemSize]="40"
-      [minBufferPx]="400"
-      [maxBufferPx]="800"
-    >
+    <div gridTableBody>
       <div
         gridTableRow
         class="h-[40px]"
         *cdkVirtualFor="let item of dataSource; let rowIndex = index"
       >
-        @for (col of columns(); track col.key) {
-          @if (col.editable && item) {
+        @for (col of columns(); let colIndex = $index; track col.key) {
+          <!-- @if (col.editable && item) {
             <div
               gridTableCell
               [class]="col.class ?? ''"
@@ -148,15 +146,26 @@
               {{ getCellValue(item, col.key) }}
             </div>
           } @else {
-            <div gridTableCell [class]="col.class ?? ''">
+            <div gridTableCell (selected)="gridActive()" [class]="col.class ?? ''">
               {{ getCellValue(item, col.key) }}
             </div>
-          }
+          } -->
+          <div
+            gridTableCell
+            (activated)="gridActive()"
+            [rowIndex]="rowIndex"
+            [colIndex]="colIndex"
+            [class]="col.class ?? ''"
+            [contentEditable]="col.editable ?? false"
+            (input)="onCellInput($event, rowIndex, col.key)"
+          >
+            {{ getCellValue(item, col.key) }}
+          </div>
         }
       </div>
-    </cdk-virtual-scroll-viewport>
+    </div>
   </div>
-</div>
+</cdk-virtual-scroll-viewport>
 
 <!-- <div gridTableBody>
     <div gridTableRow>

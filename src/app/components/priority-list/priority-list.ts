@@ -144,6 +144,10 @@ export class PriorityList implements OnInit, OnDestroy {
     this.columns.set(columns.splice(0)); // Trigger change detection
   }
 
+  gridActive() {
+    console.log('Grid active');
+  }
+
   onSort(column: string): void {
     if (this.sortColumn() === column) {
       // Cycle: asc -> desc -> none
@@ -315,6 +319,15 @@ export class PriorityList implements OnInit, OnDestroy {
     const sel = window.getSelection();
     sel?.removeAllRanges();
     sel?.addRange(range);
+  }
+
+  onCellInput(event: Event, rowIndex: number, colKey: keyof Priority): void {
+    console.log('Input event:', {
+      rowIndex,
+      colKey,
+      value: (event.target as HTMLElement).textContent,
+      event,
+    });
   }
 
   /** Focus a specific editable cell by row index and column key */
