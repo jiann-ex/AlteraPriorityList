@@ -75,9 +75,9 @@ export class GridTableHeader implements OnDestroy {
       // Check sticky and handle inverse of translation calculation to keep the sticky header in place when virtual scrolling
       // Also keep watching sticky state and to unsubscribe from scroll changes when sticky is turned off to prevent unnecessary calculations
       if (this.viewport && this.sticky()) {
-        this._scrollIndexChangeSubscription = this.viewport.scrolledIndexChange.subscribe(() =>
-          this.calculateInverseOfTranslation(),
-        );
+        this._scrollIndexChangeSubscription = this.viewport
+          .elementScrolled()
+          .subscribe(() => this.calculateInverseOfTranslation());
       } else {
         this._scrollIndexChangeSubscription?.unsubscribe();
         this._scrollIndexChangeSubscription = null;

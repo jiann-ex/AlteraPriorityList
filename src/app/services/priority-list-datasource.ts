@@ -45,6 +45,7 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
         takeUntil(this.destroy$),
       )
       .subscribe((range) => {
+        console.log('View range changed:', range);
         this.fetchRange(range);
       });
 
@@ -86,6 +87,7 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
     const startPage = Math.floor(range.start / PAGE_SIZE);
     const endPage = Math.floor((range.end - 1) / PAGE_SIZE);
 
+    console.log(`Fetching pages ${startPage} to ${endPage} for range ${range.start}-${range.end}`);
     for (let page = startPage; page <= endPage; page++) {
       this.fetchPage(page);
     }
