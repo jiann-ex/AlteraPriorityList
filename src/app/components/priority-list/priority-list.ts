@@ -2,7 +2,6 @@ import {
   Component,
   computed,
   ElementRef,
-  Host,
   inject,
   OnDestroy,
   OnInit,
@@ -16,7 +15,7 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { Priority } from '../../types/priority';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { PriorityListService } from '../../services/priority-list';
-import { PriorityListDataSource, SortState } from '../../services/priority-list-datasource';
+import { PriorityListDataSource } from '../../services/priority-list-datasource';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
@@ -28,7 +27,6 @@ import { createColumnWidths } from '../priority-list-th';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { GridTableImports } from '../grid-table/grid-table';
 import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
-import { Grid, GridRow, GridCell, GridCellWidget } from '@angular/aria/grid';
 
 @Component({
   selector: 'app-priority-list',
@@ -44,10 +42,6 @@ import { Grid, GridRow, GridCell, GridCellWidget } from '@angular/aria/grid';
     HlmDropdownMenuImports,
     GridTableImports,
     HlmTooltipImports,
-    Grid,
-    GridRow,
-    GridCell,
-    GridCellWidget,
   ],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',
@@ -60,7 +54,6 @@ export class PriorityList implements OnInit, OnDestroy {
 
   private readonly service = inject(PriorityListService);
   private readonly destroy$ = new Subject<void>();
-  private readonly filterInput$ = new Subject<void>();
 
   dataSource!: PriorityListDataSource;
   isLoading = signal(false);
@@ -69,6 +62,8 @@ export class PriorityList implements OnInit, OnDestroy {
   sortColumn = signal<string | null>(null);
   sortDirection = signal<SortDirection>(null);
 
+  testToggleTable = signal(false);
+
   filters: Record<string, string> = {};
 
   readonly columns = signal<ColumnDef[]>([
@@ -76,9 +71,9 @@ export class PriorityList implements OnInit, OnDestroy {
     { key: 'vpo', label: 'VPO' },
     { key: 'equipment', label: 'Equipment' },
     { key: 'stepSequence', label: 'Step' },
-    { key: 'priority', label: 'Priority' },
-    { key: 'r1', label: 'R1', class: 'w-16 text-right', editable: true },
-    { key: 'r2', label: 'R2', class: 'w-16 text-right', editable: true },
+    { key: 'priority', label: 'Priority', editable: true },
+    { key: 'r1', label: 'R1', class: 'text-right', editable: true },
+    { key: 'r2', label: 'R2', class: 'text-right', editable: true },
     { key: 'vpoForecastQuantity', label: 'Forecast Qty', class: 'text-right' },
     { key: 'testTimePerUnit', label: 'Test Time', class: 'text-right' },
   ]);
@@ -107,12 +102,6 @@ export class PriorityList implements OnInit, OnDestroy {
     this.dataSource.totalCount$
       .pipe(takeUntil(this.destroy$))
       .subscribe((count) => this.totalCount.set(count));
-
-    // Debounce filter input to avoid spamming API
-    this.filterInput$.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => {
-      this.dataSource.setFilters({ ...this.filters });
-      this.viewport?.scrollToIndex(0);
-    });
 
     // Initial load
     this.dataSource.refresh();
@@ -171,10 +160,6 @@ export class PriorityList implements OnInit, OnDestroy {
       direction: this.sortDirection()! as 'asc' | 'desc',
     });
     this.viewport?.scrollToIndex(0);
-  }
-
-  onFilterChange(): void {
-    this.filterInput$.next();
   }
 
   getSortIcon(column: string): string {
@@ -321,11 +306,10 @@ export class PriorityList implements OnInit, OnDestroy {
     sel?.addRange(range);
   }
 
-  onCellInput(event: Event, rowIndex: number, colKey: keyof Priority): void {
+  onCellInput(event: string, rowIndex: number, colKey: keyof Priority): void {
     console.log('Input event:', {
       rowIndex,
       colKey,
-      value: (event.target as HTMLElement).textContent,
       event,
     });
   }

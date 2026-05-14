@@ -11,6 +11,10 @@ export interface SortState {
   direction: 'asc' | 'desc';
 }
 
+/**
+ * DataSource for the priority list, handling server-side pagination, sorting, and filtering.
+ * Feed to cdk-virtual-scroll-viewport to provide an infinite scrolling experience.
+ */
 export class PriorityListDataSource extends DataSource<Priority | undefined> {
   private readonly data = new BehaviorSubject<(Priority | undefined)[]>([]);
   private readonly loading = new BehaviorSubject<boolean>(false);
@@ -18,7 +22,6 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
   private readonly destroy$ = new Subject<void>();
 
   private fetchedPages = new Set<number>();
-  private subscription?: Subscription;
 
   private sort: SortState | null = null;
   private filters: Record<string, string> = {};
@@ -32,6 +35,7 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
 
   constructor(private readonly service: PriorityListService) {
     super();
+    console.log('PriorityListDataSource initialized');
   }
 
   connect(collectionViewer: CollectionViewer): Observable<(Priority | undefined)[]> {
@@ -40,12 +44,15 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
         distinctUntilChanged((a, b) => a.start === b.start && a.end === b.end),
         takeUntil(this.destroy$),
       )
-      .subscribe((range) => this.fetchRange(range));
+      .subscribe((range) => {
+        this.fetchRange(range);
+      });
 
     return this.data.asObservable();
   }
 
   disconnect(): void {
+    console.log('Disconnecting data source');
     this.destroy$.next();
     this.destroy$.complete();
     this.data.complete();

@@ -4,18 +4,22 @@ import { isPlatformServer } from '@angular/common';
 import {
   AfterViewInit,
   booleanAttribute,
+  Component,
   computed,
   Directive,
   effect,
   ElementRef,
+  forwardRef,
   inject,
   input,
+  model,
   OnDestroy,
   OnInit,
   output,
   PLATFORM_ID,
   signal,
 } from '@angular/core';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { classes } from '@spartan-ng/helm/utils';
 import { Subscription } from 'rxjs';
 
@@ -280,6 +284,149 @@ export class GridTableCell {
   }
 }
 
+/**
+ *
+ */
+@Directive({
+  selector: '[gridTableCellInput]',
+  host: {
+    contenteditable: '',
+  },
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => GridTableCellInput),
+      multi: true,
+    },
+  ],
+})
+export class GridTableCellInput
+  extends GridTableCell
+  implements ControlValueAccessor, OnInit, OnDestroy
+{
+  private readonly _value = signal<string | null>(null);
+  private readonly _el = inject(ElementRef);
+  private onTouchedFn: () => void = () => {};
+  private onChangeFn: (value: string) => void = () => {};
+
+  constructor() {
+    super();
+  }
+  writeValue(obj: string): void {
+    // Check if obj is string, if not set to empty string
+    if ((obj && typeof obj !== 'string') || !obj) {
+      obj = '';
+    } else {
+      this._value.set(obj);
+    }
+
+    this._el.nativeElement.textContent = this._value();
+  }
+  registerOnChange(fn: any): void {
+    this.onChangeFn = fn;
+  }
+  registerOnTouched(fn: any): void {
+    this.onTouchedFn = fn;
+  }
+  setDisabledState?(isDisabled: boolean): void {
+    // @TODO: implement disabled state if needed
+  }
+
+  ngOnInit(): void {
+    this._el.nativeElement.textContent = this._value();
+
+    this._el.nativeElement.addEventListener('input', this.onInput.bind(this));
+    this._el.nativeElement.addEventListener('blur', this.onBlur.bind(this));
+  }
+  ngOnDestroy(): void {
+    this._el.nativeElement.removeEventListener('input', this.onInput.bind(this));
+    this._el.nativeElement.removeEventListener('blur', this.onBlur.bind(this));
+  }
+
+  private onInput(event: Event): void {
+    const text = (event.target as HTMLElement).textContent ?? '';
+    this._value.set(text);
+    this.onChangeFn(text);
+  }
+
+  private onBlur(): void {
+    this.onTouchedFn();
+  }
+}
+
+/** Allow to press enter to toggle boolean values */
+@Component({
+  selector: '[gridTableCellCheckbox]',
+  template: `
+    @if (this._value()) {
+      <span class="text-green-500">✓</span>
+    } @else {
+      <span class="text-red-500">✗</span>
+    }
+  `,
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => GridTableCellCheckbox),
+      multi: true,
+    },
+  ],
+})
+export class GridTableCellCheckbox
+  extends GridTableCell
+  implements ControlValueAccessor, OnInit, OnDestroy
+{
+  protected readonly _value = signal<boolean>(false);
+  private readonly _el = inject(ElementRef);
+  private onTouchedFn: () => void = () => {};
+  private onChangeFn: (value: boolean) => void = () => {};
+
+  constructor() {
+    super();
+  }
+  writeValue(obj: boolean): void {
+    // Check if obj is boolean, if not set to false
+    if (typeof obj !== 'boolean') {
+      obj = false;
+    }
+    this._value.set(obj);
+  }
+  registerOnChange(fn: any): void {
+    this.onChangeFn = fn;
+  }
+  registerOnTouched(fn: any): void {
+    this.onTouchedFn = fn;
+  }
+  setDisabledState?(isDisabled: boolean): void {
+    // @TODO: implement disabled state if needed
+  }
+
+  ngOnInit(): void {
+    this._el.nativeElement.addEventListener('keydown', this.onKeyDown.bind(this));
+    this._el.nativeElement.addEventListener('blur', this.onBlur.bind(this));
+  }
+  ngOnDestroy(): void {
+    this._el.nativeElement.removeEventListener('keydown', this.onKeyDown.bind(this));
+    this._el.nativeElement.removeEventListener('blur', this.onBlur.bind(this));
+  }
+
+  private onKeyDown(event: KeyboardEvent): void {
+    console.log('Checkbox keydown:', event.key);
+    if (event.key !== 'Enter') {
+      return;
+    }
+
+    event.preventDefault();
+    const newValue = !this._value();
+    this._value.set(newValue);
+    this.onChangeFn(newValue);
+  }
+  private onBlur(): void {
+    console.log('Checkbox blur, marking as touched');
+    this.onTouchedFn();
+  }
+}
+
 @Directive({
   selector: '[gridTableCaption]',
   host: {
@@ -301,5 +448,7 @@ export const GridTableImports = [
   GridTableRow,
   GridTableHead,
   GridTableCell,
+  GridTableCellInput,
+  GridTableCellCheckbox,
   GridTableCaption,
 ] as const;
