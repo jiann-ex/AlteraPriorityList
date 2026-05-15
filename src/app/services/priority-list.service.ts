@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '@environment';
 import { PagedList } from '../types/paged-list';
-import { mapPriorityFrom, Priority } from '../types/priority';
+import { mapPriorityFrom, Priority, PriorityGroup } from '../types/priority';
 import { delay, map, Observable, of, tap } from 'rxjs';
 
 const TOTAL_MOCK_SIZE = 10000;
@@ -33,7 +33,7 @@ export class PriorityListService {
   private readonly httpClient = inject(HttpClient);
   private readonly apiUrl = environment.apiUrl;
 
-  getPriorityGroups(): Observable<{ data: { r1: number | null; total: number }[]; total: number }> {
+  getPriorityGroups(): Observable<PriorityGroup> {
     // --- MOCK: simulate server delay with 10k test data ---
     const groupMap = new Map<number | null, number>();
     for (const item of MOCK_DATA) {

@@ -2,7 +2,7 @@ import { CollectionViewer, DataSource, ListRange } from '@angular/cdk/collection
 import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
 import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { Priority } from '../types/priority';
-import { PriorityListService, PriorityQuery } from './priority-list';
+import { PriorityListService, PriorityQuery } from './priority-list.service';
 
 const PAGE_SIZE = 50;
 

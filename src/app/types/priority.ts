@@ -34,3 +34,8 @@ export const mapPriorityTo = (priority: Priority): any =>
  * null should display placeholder wait for it to be loaded
  */
 type PriorityData = Priority | null;
+
+export interface PriorityGroup {
+  data: { r1: number | null; total: number }[];
+  total: number;
+}
