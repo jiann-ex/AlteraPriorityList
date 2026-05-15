@@ -26,6 +26,11 @@ export interface PriorityQuery {
   filters?: Record<string, string>;
 }
 
+export interface Query {
+  offset: number;
+  limit: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -33,6 +38,10 @@ export class PriorityListService {
   private readonly httpClient = inject(HttpClient);
   private readonly apiUrl = environment.apiUrl;
 
+  /**
+   * Get priority sorted by its r1 value ascending
+   * @returns
+   */
   getPriorityGroups(): Observable<PriorityGroup> {
     // --- MOCK: simulate server delay with 10k test data ---
     const groupMap = new Map<number | null, number>();
@@ -41,7 +50,27 @@ export class PriorityListService {
       groupMap.set(key, (groupMap.get(key) ?? 0) + 1);
     }
     const data = Array.from(groupMap.entries()).map(([r1, total]) => ({ r1, total }));
+    data.sort((a, b) => {
+      if (a.r1 === null) return 1;
+      if (b.r1 === null) return -1;
+      return a.r1 - b.r1;
+    });
     return of({ data, total: MOCK_DATA.length }).pipe(delay(200)); // Simulate 200ms network delay
+    // --- END MOCK ---
+  }
+
+  getPriorityListByGroup(r1: number | null, query: Query): Observable<PagedList<Priority>> {
+    // --- MOCK: simulate server delay with 10k test data ---
+    const filtered = MOCK_DATA.filter((item) => item.r1 === r1);
+    const offset = query.offset;
+    const limit = query.limit;
+    const page = filtered.slice(offset, offset + limit);
+    return of<PagedList<Priority>>({
+      data: page,
+      count: filtered.length,
+      page: -1, // Not used in this context
+      pageSize: query.limit,
+    }).pipe(delay(200)); // Simulate 200ms network delay
     // --- END MOCK ---
   }
 

@@ -1,85 +1,131 @@
-<button hlmBtn variant="outline" [hlmDropdownMenuTrigger]="menu">Open</button>
+<!-- My recreate version with more human thought on it -->
+<!--
+  Loop the group first, each group contain its own virtual scroll with xxx max height, 
+  so we can have multiple virtual scroll in the same page, 
+  and each group can be expanded/collapsed independently without affecting the others.
+  -----------------------
+  After edit or something we just
+-->
+<div gridTable [style.grid-template-columns]="gridTemplateColumns() + ' minmax(0, 1fr)'">
+  <div gridTableHeader>
+    <div
+      gridTableRow
+      cdkDropList
+      cdkDropListOrientation="horizontal"
+      (cdkDropListDropped)="dropColumn($event)"
+    >
+      @for (col of columns(); track col.key) {
+        <div
+          cdkDrag
+          gridTableHead
+          appPriorityListTh
+          hlmTooltip
+          [hlmTooltip]="col.label"
+          [column]="col"
+          [widths]="columnWidths()"
+          (widthChange)="onColumnResize(col.key, $event)"
+          (sort)="onSort(col.key)"
+          [sortColumn]="sortColumn()"
+          [sortDirection]="sortDirection()"
+        ></div>
+      }
+    </div>
+  </div>
 
-<ng-template #menu>
-  <hlm-dropdown-menu class="w-56">
-    <hlm-dropdown-menu-label>My Account</hlm-dropdown-menu-label>
+  @if (!priorityGrouped()) {
+    <div gridTableBody>
+      <!-- Placeholder for loading group data -->
+      <div gridTableRow class="h-10">
+        @for (col of columns(); let colIndex = $index; track col.key) {
+          <div gridTableCell [rowIndex]="0" [colIndex]="0">
+            <hlm-skeleton class="h-4 w-full" />
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    @for (group of priorityGrouped()?.data; let groupIndex = $index; track group.r1) {
+      <cdk-virtual-scroll-viewport
+        gridTableBody
+        class="rounded-md border"
+        [ngClass]="{
+          'h-40': groupExpanded()[group.r1 ?? -1],
+          'h-10': !groupExpanded()[group.r1 ?? -1],
+        }"
+        [itemSize]="40"
+        [minBufferPx]="200"
+        [maxBufferPx]="400"
+        #cdkViewport
+      >
+        <div
+          gridTableGroupRow
+          class="h-10"
+          [expanded]="groupExpanded()[group.r1 ?? -1]"
+          (toggled)="toggleExpand(group.r1, cdkViewport)"
+        >
+          <div
+            gridTableCell
+            [rowIndex]="groupIndex + groupIndex * group.total"
+            [colIndex]="0"
+            class="col-span-full flex items-center gap-2 font-medium"
+          >
+            <ng-icon
+              [name]="
+                groupExpanded()[group.r1 ?? -1]
+                  ? 'lucideCircleChevronDown'
+                  : 'lucideCircleChevronRight'
+              "
+              class="text-xs"
+            ></ng-icon>
+            {{ group.r1 ?? 'No Priority' }} ({{ group.total }})
+          </div>
+        </div>
+        <!-- Data rows -->
+        @if (
+          groupExpanded()[group.r1 ?? -1] && priorityDataSources()[group.r1?.toString() ?? 'null']
+        ) {
+          <pre>
+Total Count {{
+              (priorityDataSources()[group.r1?.toString() ?? 'null'].totalCount$ | async) == null
+            }}</pre
+          >
+          <div
+            gridTableRow
+            *cdkVirtualFor="
+              let row of priorityDataSources()[group.r1?.toString() ?? 'null'];
+              let rowIndex = index
+            "
+          >
+            @for (col of columns(); let colIndex = $index; track col.key) {
+              @if (!row) {
+                <div
+                  gridTableCell
+                  [rowIndex]="rowIndex"
+                  [colIndex]="colIndex"
+                  [class]="col.class ?? ''"
+                >
+                  <hlm-skeleton class="h-4 w-full" />
+                </div>
+              } @else {
+                <div
+                  gridTableCell
+                  [rowIndex]="rowIndex"
+                  [colIndex]="colIndex"
+                  [class]="col.class ?? ''"
+                >
+                  {{ row[col.key] }}
+                </div>
+              }
+            }
+          </div>
+        }
+      </cdk-virtual-scroll-viewport>
+    }
+  }
+</div>
 
-    <hlm-dropdown-menu-group>
-      <button hlmDropdownMenuItem>
-        <span>Profile</span>
-        <hlm-dropdown-menu-shortcut>⇧⌘P</hlm-dropdown-menu-shortcut>
-      </button>
-
-      <button hlmDropdownMenuItem>
-        <span>Billing</span>
-        <hlm-dropdown-menu-shortcut>⌘B</hlm-dropdown-menu-shortcut>
-      </button>
-
-      <button hlmDropdownMenuItem>
-        <span>Settings</span>
-        <hlm-dropdown-menu-shortcut>⌘S</hlm-dropdown-menu-shortcut>
-      </button>
-
-      <button hlmDropdownMenuItem>
-        <span>Keyboard shortcuts</span>
-        <hlm-dropdown-menu-shortcut>⌘K</hlm-dropdown-menu-shortcut>
-      </button>
-    </hlm-dropdown-menu-group>
-
-    <hlm-dropdown-menu-separator />
-
-    <hlm-dropdown-menu-group>
-      <button hlmDropdownMenuItem>
-        <span>Team</span>
-        <hlm-dropdown-menu-shortcut>⌘B</hlm-dropdown-menu-shortcut>
-      </button>
-
-      <button hlmDropdownMenuItem side="right" align="start" [hlmDropdownMenuTrigger]="invite">
-        <span>Invite Users</span>
-        <hlm-dropdown-menu-item-sub-indicator />
-      </button>
-
-      <button hlmDropdownMenuItem>
-        <span>New Team</span>
-        <hlm-dropdown-menu-shortcut>⌘+T</hlm-dropdown-menu-shortcut>
-      </button>
-    </hlm-dropdown-menu-group>
-
-    <hlm-dropdown-menu-separator />
-
-    <hlm-dropdown-menu-group>
-      <button hlmDropdownMenuItem>
-        <span>GitHub</span>
-      </button>
-
-      <button hlmDropdownMenuItem>
-        <span>Support</span>
-      </button>
-
-      <button hlmDropdownMenuItem disabled>
-        <span>API</span>
-      </button>
-    </hlm-dropdown-menu-group>
-
-    <hlm-dropdown-menu-separator />
-
-    <button hlmDropdownMenuItem>
-      Log out
-      <hlm-dropdown-menu-shortcut>⇧⌘Q</hlm-dropdown-menu-shortcut>
-    </button>
-  </hlm-dropdown-menu>
-</ng-template>
-
-<ng-template #invite>
-  <hlm-dropdown-menu-sub>
-    <button hlmDropdownMenuItem>Email</button>
-
-    <button hlmDropdownMenuItem>Message</button>
-    <hlm-dropdown-menu-separator />
-    <button hlmDropdownMenuItem>More...</button>
-  </hlm-dropdown-menu-sub>
-</ng-template>
-
+<!-- AI Generated test table to see the group results -->
+<h1 class="mt-5">AI Generated test table to see the group results</h1>
 <cdk-virtual-scroll-viewport
   class="h-[600px] rounded-md border"
   [itemSize]="40"

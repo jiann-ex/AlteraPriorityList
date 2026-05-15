@@ -33,6 +33,15 @@ import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { GridTableImports } from '../grid-table/grid-table';
 import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import {
+  lucideArrowDown,
+  lucideArrowRight,
+  lucideCircleChevronDown,
+  lucideCircleChevronRight,
+} from '@ng-icons/lucide';
+import { PriorityListDataSource } from '../../services/priority-list-datasource';
+import { AsyncPipe, NgClass } from '@angular/common';
 
 @Component({
   selector: 'app-priority-list',
@@ -49,12 +58,21 @@ import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
     GridTableImports,
     HlmTooltipImports,
     HlmSkeletonImports,
+    NgIcon,
+    NgClass,
+    AsyncPipe,
   ],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',
   host: {
     class: 'block w-full',
   },
+  viewProviders: [
+    provideIcons({
+      lucideCircleChevronRight,
+      lucideCircleChevronDown,
+    }),
+  ],
 })
 export class PriorityList implements OnInit, OnDestroy {
   @ViewChild('tableViewport') viewport?: CdkVirtualScrollViewport;
@@ -67,6 +85,9 @@ export class PriorityList implements OnInit, OnDestroy {
   totalCount = signal(0);
 
   priorityGrouped = signal<PriorityGroup | null>(null);
+  /** ToString the r1 to make it use as the key, feed to the Data Source to query based on the key (r1) */
+  priorityDataSources = signal<Record<string, PriorityListDataSource>>({});
+  groupExpanded = signal<Record<number, boolean>>({});
 
   sortColumn = signal<string | null>(null);
   sortDirection = signal<SortDirection>(null);
@@ -75,7 +96,7 @@ export class PriorityList implements OnInit, OnDestroy {
 
   filters: Record<string, string> = {};
 
-  readonly columns = signal<ColumnDef[]>([
+  protected readonly columns = signal<ColumnDef[]>([
     { key: 'id', label: 'ID' },
     { key: 'vpo', label: 'VPO' },
     { key: 'equipment', label: 'Equipment' },
@@ -107,6 +128,14 @@ export class PriorityList implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((res) => {
         this.priorityGrouped.set(res);
+        this.priorityDataSources.set(
+          Object.fromEntries(
+            res.data.map((group) => [
+              String(group.r1),
+              new PriorityListDataSource(this.service, group.r1),
+            ]),
+          ),
+        );
       });
     this.groupedSource = new GroupedDataSource<Priority>(
       {
@@ -126,6 +155,28 @@ export class PriorityList implements OnInit, OnDestroy {
     this.groupedSource.loading
       .pipe(takeUntil(this.destroy$))
       .subscribe((loading) => this.isLoading.set(loading));
+  }
+  toggleExpand(r1: number | null, viewport: CdkVirtualScrollViewport): void {
+    // const key = String(r1);
+    // const expanded = this.groupExpanded()[key] ?? false;
+    // this.groupExpanded.update((prev) => ({ ...prev, [key]: !expanded }));
+
+    // this.groupExpanded()[group.r1 ?? -1] = !this.groupExpanded()[group.r1 ?? -1];
+    this.groupExpanded.update((prev) => ({ ...prev, [r1 ?? -1]: !(prev[r1 ?? -1] ?? false) }));
+    // After toggling the group, we need to manually trigger the viewport to check the new range and fetch data if needed
+    //viewport.scrollToIndex(0); // Scroll to top to trigger data fetch for the newly expanded group
+    viewport.checkViewportSize(); // Check if the viewport needs to fetch more data based on the new expanded state
+    //this.priorityDataSources()[String(r1)]?.refresh(); // Refresh the data source for the group to fetch data if it's expanded
+    // Looks like reinitialize fix the issue it become empty after toggle
+    this.priorityDataSources.update((prev) => {
+      const key = String(r1);
+      // const ds = prev[key];
+      // if (ds) {
+      //   ds.refresh();
+      // }
+      prev[key] = new PriorityListDataSource(this.service, r1);
+      return { ...prev };
+    });
   }
 
   ngOnDestroy(): void {

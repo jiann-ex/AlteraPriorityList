@@ -2,7 +2,7 @@ import { CollectionViewer, DataSource, ListRange } from '@angular/cdk/collection
 import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
 import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { Priority } from '../types/priority';
-import { PriorityListService, PriorityQuery } from './priority-list.service';
+import { PriorityListService, PriorityQuery, Query } from './priority-list.service';
 
 const PAGE_SIZE = 50;
 
@@ -10,6 +10,11 @@ export interface SortState {
   column: string;
   direction: 'asc' | 'desc';
 }
+/**
+ * Allow to filter multiple values or single value for a single column,
+ * e.g. filter r1 with both 1 and 3 to show all items with r1=1 or r1=3
+ */
+export type FilterState = Record<keyof Priority, string[] | string>;
 
 /**
  * DataSource for the priority list, handling server-side pagination, sorting, and filtering.
@@ -21,7 +26,7 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
   private readonly totalCount = new BehaviorSubject<number>(0);
   private readonly destroy$ = new Subject<void>();
 
-  private fetchedPages = new Set<number>();
+  private fetchedPages = new Set<string>();
 
   private sort: SortState | null = null;
   private filters: Record<string, string> = {};
@@ -30,16 +35,15 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
   readonly totalCount$ = this.totalCount.asObservable();
   readonly data$ = this.data.asObservable();
 
-  get length(): number {
-    return this.totalCount.value;
-  }
-
-  constructor(private readonly service: PriorityListService) {
+  constructor(
+    private readonly service: PriorityListService,
+    private readonly groupKey: number | null,
+  ) {
     super();
-    console.log('PriorityListDataSource initialized');
   }
 
   connect(collectionViewer: CollectionViewer): Observable<(Priority | undefined)[]> {
+    console.log('DataSource connected R1:', this.groupKey);
     collectionViewer.viewChange
       .pipe(
         distinctUntilChanged((a, b) => a.start === b.start && a.end === b.end),
@@ -49,12 +53,11 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
         console.log('View range changed:', range);
         this.fetchRange(range);
       });
-
+    this.fetchRange({ start: 0, end: PAGE_SIZE }); // Fetch initial range
     return this.data.asObservable();
   }
 
   disconnect(): void {
-    console.log('Disconnecting data source');
     this.destroy$.next();
     this.destroy$.complete();
     this.data.complete();
@@ -81,39 +84,38 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
     this.data.next([]);
     this.totalCount.next(0);
     // Fetch first page immediately to get totalCount and initial data
-    this.fetchPage(0);
+    this.fetchPage(0, PAGE_SIZE);
   }
 
   private fetchRange(range: ListRange): void {
+    const offset = range.start;
+    const limit = range.end - range.start;
+
     const startPage = Math.floor(range.start / PAGE_SIZE);
     const endPage = Math.floor((range.end - 1) / PAGE_SIZE);
 
-    console.log(`Fetching pages ${startPage} to ${endPage} for range ${range.start}-${range.end}`);
-    for (let page = startPage; page <= endPage; page++) {
-      this.fetchPage(page);
-    }
+    // for (let page = startPage; page <= endPage; page++) {
+    //   this.fetchPage(page);
+    // }
+    this.fetchPage(offset, limit);
   }
 
-  private fetchPage(pageIndex: number): void {
-    if (this.fetchedPages.has(pageIndex)) return;
-    this.fetchedPages.add(pageIndex);
+  private fetchPage(offset: number, limit: number): void {
+    // if (this.fetchedPages.has(pageIndex)) return;
+    // this.fetchedPages.add(pageIndex);
 
     this.loading.next(true);
 
-    const query: PriorityQuery = {
-      page: pageIndex + 1, // API is 1-indexed
-      pageSize: PAGE_SIZE,
-      sort: this.sort?.column,
-      sortDirection: this.sort?.direction,
-      filters: this.filters,
+    const query: Query = {
+      offset: offset,
+      limit: limit,
     };
 
-    console.log('Fetching page with query:', query);
-    this.service.getPriorityList(query).subscribe({
+    this.service.getPriorityListByGroup(this.groupKey, query).subscribe({
       next: (response) => {
-        console.log('Received response for page', response);
         const total = response.count;
         this.totalCount.next(total);
+        console.log(`Fetched page for group, total=${total}`);
 
         // Expand the sparse array to match total size
         const current = this.data.value.slice();
@@ -122,7 +124,8 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
         }
 
         // Place fetched items at the correct offset
-        const offset = pageIndex * PAGE_SIZE;
+        //const offset = pageIndex * PAGE_SIZE;
+        const offset = query.offset;
         for (let i = 0; i < response.data.length; i++) {
           current[offset + i] = response.data[i];
         }
@@ -132,7 +135,7 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
       },
       error: () => {
         // Allow retry on next scroll
-        this.fetchedPages.delete(pageIndex);
+        //this.fetchedPages.delete(pageIndex);
         this.loading.next(false);
       },
     });
