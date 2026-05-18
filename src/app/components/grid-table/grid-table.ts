@@ -63,9 +63,9 @@ export class GridTableHeader implements OnDestroy {
   // Try get cdk virtual scroll viewport from parent, if exists then we are in virtual scroll mode
   private readonly viewport = inject(CdkVirtualScrollViewport, { optional: true });
 
-  sticky = input(false, { transform: booleanAttribute });
-  stickyClasses = computed(() => (this.sticky() ? 'sticky top-0 z-10' : ''));
-  inverseOfTranslation = signal<number>(0);
+  readonly sticky = input(false, { transform: booleanAttribute });
+  protected readonly stickyClasses = computed(() => (this.sticky() ? 'sticky top-0 z-10' : ''));
+  protected readonly inverseOfTranslation = signal<number>(0);
   private _scrollIndexChangeSubscription: Subscription | null = null;
 
   constructor() {
@@ -147,12 +147,12 @@ export class GridTableBody implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.el.nativeElement.tagName === 'CDK-VIRTUAL-SCROLL-VIEWPORT') {
-      this.el.nativeElement.style['overflow-x'] = 'hidden'; // prevent double scrollbars
-      this.el.nativeElement.style['scrollbar-gutter'] = 'stable';
-    }
+    // if (this.el.nativeElement.tagName === 'CDK-VIRTUAL-SCROLL-VIEWPORT') {
+    //   this.el.nativeElement.style['overflow-x'] = 'hidden'; // prevent double scrollbars
+    //   this.el.nativeElement.style['scrollbar-gutter'] = 'stable';
+    // }
+    // wrapper.style.overflowX = 'hidden'; // prevent double scrollbars
 
-    wrapper.style.overflow = 'hidden'; // prevent double scrollbars
     this.initSyncColumnsToWrapper(wrapper);
   }
 
@@ -236,24 +236,55 @@ export class GridTableRow {
     '(keydown.enter)': 'toggle()',
     '(keydown.space)': 'toggle(); $event.preventDefault()',
     tabindex: '0',
+    '[class]': 'stickyClasses()',
+    '[style.top.px]': 'inverseOfTranslation()',
   },
   hostDirectives: [GridRow],
 })
 export class GridTableGroupRow {
+  /** Try get cdk virtual scroll viewport from parent, if exists then we are in virtual scroll mode */
+  private readonly _viewport = inject(CdkVirtualScrollViewport, { optional: true });
   readonly expanded = model<boolean>(true);
   readonly toggled = output<boolean>();
+  readonly sticky = input(false, { transform: booleanAttribute });
+  protected readonly stickyClasses = computed(() => (this.sticky() ? 'sticky top-0 z-10' : ''));
+  protected readonly inverseOfTranslation = signal<number>(0);
+  private _scrollIndexChangeSubscription: Subscription | null = null;
 
   constructor() {
     classes(
       () =>
         'grid grid-cols-subgrid col-span-full border-b transition-colors bg-muted/30 hover:bg-muted/50 cursor-pointer select-none font-medium',
     );
+
+    effect(() => {
+      // Check sticky and handle inverse of translation calculation to keep the sticky header in place when virtual scrolling
+      // Also keep watching sticky state and to unsubscribe from scroll changes when sticky is turned off to prevent unnecessary calculations
+      if (this._viewport && this.sticky()) {
+        this._scrollIndexChangeSubscription = this._viewport.scrolledIndexChange.subscribe(() =>
+          this.calculateInverseOfTranslation(),
+        );
+      } else {
+        this._scrollIndexChangeSubscription?.unsubscribe();
+        this._scrollIndexChangeSubscription = null;
+        this.inverseOfTranslation.set(0);
+      }
+    });
   }
 
   toggle(): void {
     const next = !this.expanded();
     this.expanded.set(next);
     this.toggled.emit(next);
+  }
+
+  private calculateInverseOfTranslation(): void {
+    if (!this._viewport) {
+      this.inverseOfTranslation.set(0);
+      return;
+    }
+    const offset = this._viewport.getOffsetToRenderedContentStart();
+    this.inverseOfTranslation.set(-(offset ?? 0));
   }
 }
 

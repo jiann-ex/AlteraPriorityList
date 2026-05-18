@@ -58,11 +58,14 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
   }
 
   disconnect(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-    this.data.complete();
-    this.loading.complete();
-    this.totalCount.complete();
+    console.log('DataSource disconnected R1:', this.groupKey);
+    // Under @if after disconnect get call when destroyed, causing the *cdkVirtualFor to be empty,
+    // need to complete the subjects to prevent any further emissions
+    // this.destroy$.next();
+    // this.destroy$.complete();
+    // this.data.complete();
+    // this.loading.complete();
+    // this.totalCount.complete();
   }
 
   setSort(sort: SortState | null): void {

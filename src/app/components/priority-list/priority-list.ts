@@ -165,18 +165,21 @@ export class PriorityList implements OnInit, OnDestroy {
     this.groupExpanded.update((prev) => ({ ...prev, [r1 ?? -1]: !(prev[r1 ?? -1] ?? false) }));
     // After toggling the group, we need to manually trigger the viewport to check the new range and fetch data if needed
     //viewport.scrollToIndex(0); // Scroll to top to trigger data fetch for the newly expanded group
-    viewport.checkViewportSize(); // Check if the viewport needs to fetch more data based on the new expanded state
+    //viewport.checkViewportSize(); // Check if the viewport needs to fetch more data based on the new expanded state
     //this.priorityDataSources()[String(r1)]?.refresh(); // Refresh the data source for the group to fetch data if it's expanded
     // Looks like reinitialize fix the issue it become empty after toggle
     this.priorityDataSources.update((prev) => {
       const key = String(r1);
-      // const ds = prev[key];
-      // if (ds) {
-      //   ds.refresh();
-      // }
-      prev[key] = new PriorityListDataSource(this.service, r1);
+      const ds = prev[key];
+      if (ds) {
+        ds.refresh();
+      }
+      //prev[key] = new PriorityListDataSource(this.service, r1);
       return { ...prev };
     });
+  }
+  printDataSource(e: any): void {
+    //console.log(e);
   }
 
   ngOnDestroy(): void {

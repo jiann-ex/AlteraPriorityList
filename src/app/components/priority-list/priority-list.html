@@ -6,7 +6,11 @@
   -----------------------
   After edit or something we just
 -->
-<div gridTable [style.grid-template-columns]="gridTemplateColumns() + ' minmax(0, 1fr)'">
+<div
+  class="overflow-x-auto"
+  gridTable
+  [style.grid-template-columns]="gridTemplateColumns() + ' minmax(0, 1fr)'"
+>
   <div gridTableHeader>
     <div
       gridTableRow
@@ -47,7 +51,7 @@
     @for (group of priorityGrouped()?.data; let groupIndex = $index; track group.r1) {
       <cdk-virtual-scroll-viewport
         gridTableBody
-        class="rounded-md border"
+        class="overflow-x-hidden"
         [ngClass]="{
           'h-40': groupExpanded()[group.r1 ?? -1],
           'h-10': !groupExpanded()[group.r1 ?? -1],
@@ -58,8 +62,9 @@
         #cdkViewport
       >
         <div
-          gridTableGroupRow
           class="h-10"
+          gridTableGroupRow
+          sticky
           [expanded]="groupExpanded()[group.r1 ?? -1]"
           (toggled)="toggleExpand(group.r1, cdkViewport)"
         >
@@ -84,11 +89,6 @@
         @if (
           groupExpanded()[group.r1 ?? -1] && priorityDataSources()[group.r1?.toString() ?? 'null']
         ) {
-          <pre>
-Total Count {{
-              (priorityDataSources()[group.r1?.toString() ?? 'null'].totalCount$ | async) == null
-            }}</pre
-          >
           <div
             gridTableRow
             *cdkVirtualFor="
