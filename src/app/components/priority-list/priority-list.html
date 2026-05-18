@@ -48,17 +48,17 @@
       </div>
     </div>
   } @else {
-    @for (group of priorityGrouped()?.data; let groupIndex = $index; track group.r1) {
+    @for (group of priorityGrouped(); let groupIndex = $index; track group.r1) {
       <cdk-virtual-scroll-viewport
         gridTableBody
         class="overflow-x-hidden"
         [ngClass]="{
-          'h-40': groupExpanded()[group.r1 ?? -1],
-          'h-10': !groupExpanded()[group.r1 ?? -1],
+          'h-80': groupExpanded()[group.key],
+          'h-10': !groupExpanded()[group.key],
         }"
         [itemSize]="40"
-        [minBufferPx]="200"
-        [maxBufferPx]="400"
+        [minBufferPx]="320"
+        [maxBufferPx]="620"
         #cdkViewport
       >
         <div
@@ -66,7 +66,7 @@
           gridTableGroupRow
           sticky
           [expanded]="groupExpanded()[group.r1 ?? -1]"
-          (toggled)="toggleExpand(group.r1, cdkViewport)"
+          (toggled)="toggleExpand(group, cdkViewport)"
         >
           <div
             gridTableCell
@@ -86,16 +86,8 @@
           </div>
         </div>
         <!-- Data rows -->
-        @if (
-          groupExpanded()[group.r1 ?? -1] && priorityDataSources()[group.r1?.toString() ?? 'null']
-        ) {
-          <div
-            gridTableRow
-            *cdkVirtualFor="
-              let row of priorityDataSources()[group.r1?.toString() ?? 'null'];
-              let rowIndex = index
-            "
-          >
+        @if (groupExpanded()[group.key]) {
+          <div gridTableRow *cdkVirtualFor="let row of group.dataSource; let rowIndex = index">
             @for (col of columns(); let colIndex = $index; track col.key) {
               @if (!row) {
                 <div
@@ -107,14 +99,41 @@
                   <hlm-skeleton class="h-4 w-full" />
                 </div>
               } @else {
-                <div
-                  gridTableCell
-                  [rowIndex]="rowIndex"
-                  [colIndex]="colIndex"
-                  [class]="col.class ?? ''"
-                >
-                  {{ row[col.key] }}
-                </div>
+                @switch (col.key) {
+                  @case ('priority') {
+                    <div
+                      gridTableCellCheckbox
+                      (activated)="gridActive()"
+                      [rowIndex]="rowIndex"
+                      [colIndex]="colIndex"
+                      [class]="col.class ?? ''"
+                      [ngModel]="row[col.key]"
+                      (ngModelChange)="onCellInput($event, rowIndex, col.key)"
+                    ></div>
+                  }
+                  @case ('r1')
+                  @case ('r2') {
+                    <div
+                      gridTableCellInput
+                      (activated)="gridActive()"
+                      [rowIndex]="rowIndex"
+                      [colIndex]="colIndex"
+                      [class]="col.class ?? ''"
+                      [ngModel]="row[col.key]"
+                      (ngModelChange)="onCellInput($event, rowIndex, col.key)"
+                    ></div>
+                  }
+                  @default {
+                    <div
+                      gridTableCell
+                      [rowIndex]="rowIndex"
+                      [colIndex]="colIndex"
+                      [class]="col.class ?? ''"
+                    >
+                      {{ row[col.key] }}
+                    </div>
+                  }
+                }
               }
             }
           </div>
@@ -125,7 +144,7 @@
 </div>
 
 <!-- AI Generated test table to see the group results -->
-<h1 class="mt-5">AI Generated test table to see the group results</h1>
+<!-- <h1 class="mt-5">AI Generated test table to see the group results</h1>
 <cdk-virtual-scroll-viewport
   class="h-[600px] rounded-md border"
   [itemSize]="40"
@@ -178,7 +197,6 @@
             </div>
           </div>
         } @else if (!row.item) {
-          <!-- Placeholder row for unfetched data -->
           <div gridTableRow class="h-[40px] animate-pulse">
             @for (col of columns(); let colIndex = $index; track col.key) {
               <div
@@ -235,10 +253,9 @@
   </div>
 </cdk-virtual-scroll-viewport>
 
-<!-- Status bar -->
 <div class="text-muted-foreground flex items-center gap-2 px-2 py-1 text-xs">
   <span>{{ groupedSource.total }} rows</span>
   @if (isLoading()) {
     <hlm-spinner size="sm" />
   }
-</div>
+</div> -->

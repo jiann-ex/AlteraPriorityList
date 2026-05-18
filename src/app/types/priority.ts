@@ -1,3 +1,4 @@
+import { PriorityListDataSource } from '../services/priority-list-datasource';
 import { PagedList } from './paged-list';
 
 export interface Priority {
@@ -33,9 +34,26 @@ export const mapPriorityTo = (priority: Priority): any =>
 /**
  * null should display placeholder wait for it to be loaded
  */
-type PriorityData = Priority | null;
+export type PriorityData = Priority | null;
 
-export interface PriorityGroup {
-  data: { r1: number | null; total: number }[];
+/** Group data receive from the backend */
+export interface PriorityGroupData {
+  r1: number | null;
   total: number;
+}
+/** Class that has been initialized in the priority list service */
+export class PriorityGroup {
+  r1: number | null = null;
+  total: number = 0;
+  dataSource: PriorityListDataSource;
+  /** Unique key for the group, derived from r1. Use to handle expand state or other stuff in priority list */
+  get key() {
+    return String(this.r1 ?? 'null');
+  }
+
+  constructor(r1: number | null, total: number, dataSource: PriorityListDataSource) {
+    this.r1 = r1;
+    this.total = total;
+    this.dataSource = dataSource;
+  }
 }

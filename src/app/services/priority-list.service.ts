@@ -4,6 +4,7 @@ import { environment } from '@environment';
 import { PagedList } from '../types/paged-list';
 import { mapPriorityFrom, Priority, PriorityGroup } from '../types/priority';
 import { delay, map, Observable, of, tap } from 'rxjs';
+import { PriorityListDataSource } from './priority-list-datasource';
 
 const TOTAL_MOCK_SIZE = 10000;
 const MOCK_DATA: Priority[] = Array.from({ length: TOTAL_MOCK_SIZE }, (_, i) => ({
@@ -42,7 +43,7 @@ export class PriorityListService {
    * Get priority sorted by its r1 value ascending
    * @returns
    */
-  getPriorityGroups(): Observable<PriorityGroup> {
+  getPriorityGroups(): Observable<PriorityGroup[]> {
     // --- MOCK: simulate server delay with 10k test data ---
     const groupMap = new Map<number | null, number>();
     for (const item of MOCK_DATA) {
@@ -55,7 +56,12 @@ export class PriorityListService {
       if (b.r1 === null) return -1;
       return a.r1 - b.r1;
     });
-    return of({ data, total: MOCK_DATA.length }).pipe(delay(200)); // Simulate 200ms network delay
+    return of(
+      data.map((group) => {
+        const dataSource = new PriorityListDataSource(this, group.r1);
+        return new PriorityGroup(group.r1, group.total, dataSource);
+      }),
+    ).pipe(delay(200)); // Simulate 200ms network delay
     // --- END MOCK ---
   }
 

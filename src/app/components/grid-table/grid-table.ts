@@ -254,7 +254,7 @@ export class GridTableGroupRow {
   constructor() {
     classes(
       () =>
-        'grid grid-cols-subgrid col-span-full border-b transition-colors bg-muted/30 hover:bg-muted/50 cursor-pointer select-none font-medium',
+        'grid grid-cols-subgrid col-span-full border-b transition-colors bg-background hover:bg-muted  cursor-pointer select-none font-medium',
     );
 
     effect(() => {

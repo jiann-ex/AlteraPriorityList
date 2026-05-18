@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
 import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { Priority } from '../types/priority';
 import { PriorityListService, PriorityQuery, Query } from './priority-list.service';
+import type { PriorityData } from '../types';
 
 const PAGE_SIZE = 50;
 
@@ -20,8 +21,8 @@ export type FilterState = Record<keyof Priority, string[] | string>;
  * DataSource for the priority list, handling server-side pagination, sorting, and filtering.
  * Feed to cdk-virtual-scroll-viewport to provide an infinite scrolling experience.
  */
-export class PriorityListDataSource extends DataSource<Priority | undefined> {
-  private readonly data = new BehaviorSubject<(Priority | undefined)[]>([]);
+export class PriorityListDataSource extends DataSource<PriorityData> {
+  private readonly data = new BehaviorSubject<PriorityData[]>([]);
   private readonly loading = new BehaviorSubject<boolean>(false);
   private readonly totalCount = new BehaviorSubject<number>(0);
   private readonly destroy$ = new Subject<void>();
@@ -42,7 +43,7 @@ export class PriorityListDataSource extends DataSource<Priority | undefined> {
     super();
   }
 
-  connect(collectionViewer: CollectionViewer): Observable<(Priority | undefined)[]> {
+  connect(collectionViewer: CollectionViewer): Observable<PriorityData[]> {
     console.log('DataSource connected R1:', this.groupKey);
     collectionViewer.viewChange
       .pipe(
