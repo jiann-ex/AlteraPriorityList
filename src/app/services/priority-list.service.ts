@@ -67,6 +67,7 @@ export class PriorityListService {
 
   getPriorityListByGroup(r1: number | null, query: Query): Observable<PagedList<Priority>> {
     // --- MOCK: simulate server delay with 10k test data ---
+    console.log(`Fetching data for R1=${r1}, offset=${query.offset}, limit=${query.limit}`);
     const filtered = MOCK_DATA.filter((item) => item.r1 === r1);
     const offset = query.offset;
     const limit = query.limit;

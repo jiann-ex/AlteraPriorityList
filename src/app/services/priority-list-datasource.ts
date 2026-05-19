@@ -1,11 +1,16 @@
 import { CollectionViewer, DataSource, ListRange } from '@angular/cdk/collections';
 import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
-import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { debounce, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { Priority } from '../types/priority';
 import { PriorityListService, Query } from './priority-list.service';
 import type { PriorityData } from '../types';
 
 const PAGE_SIZE = 50;
+/**
+ * Scroll debounce time in milliseconds, meaning wait 300ms after user stop scroll
+ * Prevent trigger unintended request when user scrolling fast
+ */
+const SCROLL_DEBOUNCE_TIME = 300;
 
 export interface SortState {
   column: string;
@@ -22,19 +27,21 @@ export type FilterState = Record<keyof Priority, string[] | string>;
  * Feed to cdk-virtual-scroll-viewport to provide an infinite scrolling experience.
  */
 export class PriorityListDataSource extends DataSource<PriorityData> {
-  private readonly data = new BehaviorSubject<PriorityData[]>([]);
-  private readonly loading = new BehaviorSubject<boolean>(false);
-  private readonly totalCount = new BehaviorSubject<number>(0);
-  private readonly destroy$ = new Subject<void>();
-
-  private fetchedPages = new Set<string>();
-
-  private sort: SortState | null = null;
-  private filters: Record<string, string> = {};
+  private data = new BehaviorSubject<PriorityData[]>([]);
+  private loading = new BehaviorSubject<boolean>(false);
+  private totalCount = new BehaviorSubject<number>(0);
+  private destroy$ = new Subject<void>();
+  /** Stored set of fetched list range to prevent refetch same thing again */
+  private fetched = new Set<ListRange>();
 
   readonly loading$ = this.loading.asObservable();
   readonly totalCount$ = this.totalCount.asObservable();
   readonly data$ = this.data.asObservable();
+  /**
+   * Stored edited items and update the data to the edited one
+   * when there is match with the id
+   */
+  private readonly _editedItems: Priority[] = [];
 
   constructor(
     private readonly service: PriorityListService,
@@ -43,18 +50,36 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     super();
   }
 
+  private _init() {
+    this.data = new BehaviorSubject<PriorityData[]>([]);
+    this.loading = new BehaviorSubject<boolean>(false);
+    this.totalCount = new BehaviorSubject<number>(0);
+    this.destroy$ = new Subject<void>();
+  }
+  private _destroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.data.complete();
+    this.loading.complete();
+    this.totalCount.complete();
+  }
+
   connect(collectionViewer: CollectionViewer): Observable<PriorityData[]> {
-    console.log('DataSource connected R1:', this.groupKey);
     collectionViewer.viewChange
       .pipe(
+        // Only trigger if the start or end of the view range changed,
+        // prevent trigger when user scrolls within the same range
         distinctUntilChanged((a, b) => a.start === b.start && a.end === b.end),
+        // Add debounce to prevent too many calls during fast scrolling
+        // Once user stop scrolling for {SCROLL_DEBOUNCE_TIME}ms,
+        // then fetch the data for the current range
+        debounceTime(SCROLL_DEBOUNCE_TIME),
         takeUntil(this.destroy$),
       )
       .subscribe((range) => {
-        console.log('View range changed:', range);
-        this.fetchRange(range);
+        this._fetchRange(range);
       });
-    this.fetchRange({ start: 0, end: PAGE_SIZE }); // Fetch initial range
+    // In template, can directly use in *cdkVirtualFor="let item of dataSource"
     return this.data.asObservable();
   }
 
@@ -69,29 +94,33 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     // this.totalCount.complete();
   }
 
-  setSort(sort: SortState | null): void {
-    this.sort = sort;
-    this.reset();
-  }
-
-  setFilters(filters: Record<string, string>): void {
-    this.filters = filters;
-    this.reset();
-  }
-
   refresh(): void {
-    this.reset();
+    this._reset();
   }
 
-  private reset(): void {
-    this.fetchedPages.clear();
+  private _reset(): void {
+    this.fetched.clear();
     this.data.next([]);
     this.totalCount.next(0);
     // Fetch first page immediately to get totalCount and initial data
-    this.fetchPage(0, PAGE_SIZE);
+    this._fetchRange({ start: 0, end: PAGE_SIZE });
   }
 
-  private fetchRange(range: ListRange): void {
+  private _isRangeFetched(range: ListRange): boolean {
+    for (const fetchedRange of this.fetched) {
+      if (range.start >= fetchedRange.start && range.end <= fetchedRange.end) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Calculate offset and limit based on the given range,
+   * then call API to fetch the data.
+   * @param range
+   */
+  private _fetchRange(range: ListRange): void {
     const offset = range.start;
     const limit = range.end - range.start;
 
@@ -101,12 +130,18 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     // for (let page = startPage; page <= endPage; page++) {
     //   this.fetchPage(page);
     // }
-    this.fetchPage(offset, limit);
+    if (this._isRangeFetched(range)) {
+      console.log(`Range ${range.start}-${range.end} already fetched, skip API call.`);
+      return;
+    }
+    this._fetchPage(offset, limit, range);
   }
 
-  private fetchPage(offset: number, limit: number): void {
+  private _fetchPage(offset: number, limit: number, range: ListRange): void {
     // if (this.fetchedPages.has(pageIndex)) return;
-    // this.fetchedPages.add(pageIndex);
+    if (range) {
+      this.fetched.add(range);
+    }
 
     this.loading.next(true);
 
