@@ -1,5 +1,5 @@
 import { Component, signal, ViewEncapsulation } from '@angular/core';
-import { OverlayContainer } from '@angular/cdk/overlay';
+import { Overlay, OverlayContainer } from '@angular/cdk/overlay';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { HlmMenubarImports } from '@spartan-ng/helm/menubar';
@@ -23,7 +23,7 @@ import { ShadowDomOverlayContainer } from './shadow-dom-overlay-container';
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.scss'],
-  providers: [{ provide: OverlayContainer, useClass: ShadowDomOverlayContainer }],
+  providers: [{ provide: OverlayContainer, useClass: ShadowDomOverlayContainer }, Overlay],
   viewProviders: [provideIcons({ lucideAArrowUp })],
   encapsulation: ViewEncapsulation.ShadowDom,
 })
