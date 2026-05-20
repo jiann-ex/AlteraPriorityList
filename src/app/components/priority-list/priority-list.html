@@ -116,7 +116,7 @@
                       [colIndex]="colIndex"
                       [class]="col.class ?? ''"
                       [ngModel]="row[col.key]"
-                      (ngModelChange)="onCellInput($event, rowIndex, col.key)"
+                      (ngModelChange)="editBooleanItem(group.dataSource, rowIndex, col.key, $event)"
                     ></div>
                   }
                   @case ('r1')

@@ -240,8 +240,16 @@ export class PriorityList implements OnInit, OnDestroy {
   }
   editBooleanItem(
     dataSource: PriorityListDataSource,
-    row: Priority,
+    index: number,
     field: keyof Priority,
     value: boolean,
-  ): void {}
+  ): void {
+    console.log('Boolean input event:', {
+      rowIndex: index,
+      colKey: field,
+      event: value,
+    });
+    const parsed = Boolean(value);
+    dataSource.editItem(index, field, parsed);
+  }
 }

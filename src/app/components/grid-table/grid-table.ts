@@ -494,11 +494,13 @@ export class GridTableCellInput
 @Component({
   selector: '[gridTableCellCheckbox]',
   template: `
-    @if (this._value()) {
-      <span class="text-green-500">✓</span>
-    } @else {
-      <span class="text-red-500">✗</span>
-    }
+    <span>
+      @if (this._value()) {
+        <span class="text-green-500">✓</span>
+      } @else {
+        <span class="text-red-500">✗</span>
+      }
+    </span>
   `,
   providers: [
     {
@@ -539,11 +541,11 @@ export class GridTableCellCheckbox
 
   ngOnInit(): void {
     this._el.nativeElement.addEventListener('keydown', this.onKeyDown.bind(this));
-    this._el.nativeElement.addEventListener('blur', this.onBlur.bind(this));
+    this._el.nativeElement.addEventListener('blur', this._onBlur.bind(this));
   }
   ngOnDestroy(): void {
     this._el.nativeElement.removeEventListener('keydown', this.onKeyDown.bind(this));
-    this._el.nativeElement.removeEventListener('blur', this.onBlur.bind(this));
+    this._el.nativeElement.removeEventListener('blur', this._onBlur.bind(this));
   }
 
   private onKeyDown(event: KeyboardEvent): void {
@@ -556,9 +558,16 @@ export class GridTableCellCheckbox
     const newValue = !this._value();
     this._value.set(newValue);
     this.onChangeFn(newValue);
+
+    setTimeout(() => {
+      // Focus back the element after change to prevent losing focus when pressing enter
+      this._focus();
+    });
   }
-  private onBlur(): void {
-    console.log('Checkbox blur, marking as touched');
+  private _focus() {
+    this._el.nativeElement.focus();
+  }
+  private _onBlur(): void {
     this.onTouchedFn();
   }
 }

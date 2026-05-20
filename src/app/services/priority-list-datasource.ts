@@ -191,6 +191,11 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     });
   }
 
+  /** Retrieve list of edited items ready send to the backend */
+  getEditedItems(): Priority[] {
+    return Array.from(this._editedItems.values());
+  }
+
   /** Update a single item in the local cache (after API confirms the save). */
   updateItem(index: number, field: keyof Priority, value: unknown): void {
     const current = this.data.value.slice();
