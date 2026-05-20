@@ -1,29 +1,14 @@
-import {
-  Component,
-  computed,
-  ElementRef,
-  inject,
-  OnDestroy,
-  OnInit,
-  Signal,
-  signal,
-  ViewChild,
-} from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { Priority, PriorityGroup } from '../../types/priority';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { PriorityListService } from '../../services/priority-list.service';
-import {
-  GroupedDataSource,
-  FlatRow,
-  GroupHeaderRow,
-  DataRow,
-} from '../../services/grouped-datasource';
+import { GroupedDataSource } from '../../services/grouped-datasource';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
-import { debounceTime, finalize, takeUntil } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import type { ColumnDef } from '../../types/column-def';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { SortDirection } from '@app-types';
@@ -34,12 +19,7 @@ import { GridTableImports } from '../grid-table/grid-table';
 import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import {
-  lucideArrowDown,
-  lucideArrowRight,
-  lucideCircleChevronDown,
-  lucideCircleChevronRight,
-} from '@ng-icons/lucide';
+import { lucideCircleChevronDown, lucideCircleChevronRight } from '@ng-icons/lucide';
 import { PriorityListDataSource } from '../../services/priority-list-datasource';
 import { AsyncPipe, NgClass } from '@angular/common';
 
@@ -75,11 +55,13 @@ import { AsyncPipe, NgClass } from '@angular/common';
   ],
 })
 export class PriorityList implements OnInit, OnDestroy {
+  /** @TODO: Remove this later, not in used anymore */
   @ViewChild('tableViewport') viewport?: CdkVirtualScrollViewport;
 
   private readonly service = inject(PriorityListService);
   private readonly destroy$ = new Subject<void>();
 
+  /** @TODO: Remove this later, not in used anymore */
   groupedSource!: GroupedDataSource<Priority>;
   isLoading = signal(false);
   totalCount = signal(0);
@@ -167,7 +149,7 @@ export class PriorityList implements OnInit, OnDestroy {
     //   //prev[key] = new PriorityListDataSource(this.service, r1);
     //   return { ...prev };
     // });
-    group.dataSource.refresh();
+    group.dataSource.refresh(); // @TODO: See why without refresh is not working
   }
   printDataSource(e: any): void {
     //console.log(e);

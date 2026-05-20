@@ -371,9 +371,8 @@ export class GridTableCellInput
   private readonly _el = inject(ElementRef);
   private onTouchedFn: () => void = () => {};
   private onChangeFn: (value: string) => void = () => {};
+  /** Listen to data-active attribute changes to highlight the cell values */
   private readonly observer: MutationObserver;
-  private _isJustFocus = true;
-
   constructor() {
     super();
 
@@ -381,24 +380,33 @@ export class GridTableCellInput
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes') {
           const isActive = this._el.nativeElement.getAttribute(this._activeAttribute) === 'true';
-          // if (isActive) {
-          //   // this._isJustFocus = true;
-          //   this._highlight();
-          //   setTimeout(() => {
-          //     this._focus();
-          //   });
-          // }
+          if (isActive) {
+            this._highlight();
+          } else {
+            // When focus out from the cell input,
+            // Check if the highlighted content still belongs to the current cell,
+            // if yes then remove the highlight, as the next focus cell is NOT the other GridTableCellInput.
+            if (this._isCurrentElementHighlighted()) {
+              this._highlight(false);
+            }
+          }
         }
       });
     });
   }
-
+  private _isCurrentElementHighlighted(): boolean {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return false;
+    }
+    const range = selection.getRangeAt(0);
+    return this._el.nativeElement.contains(range.commonAncestorContainer);
+  }
   private _highlight(highlight: boolean = true) {
     // Highlight the whole cell
     const range = document.createRange();
     range.selectNodeContents(this._el.nativeElement);
     const selection = window.getSelection();
-
     if (selection) {
       selection.removeAllRanges();
       if (highlight) {
@@ -407,11 +415,7 @@ export class GridTableCellInput
     }
   }
   private _focus() {
-    // When el is focusing and receive new value, the focus will be lost,
-    // so only focus when the element is not focusing to prevent interrupt user input
-    if (this._el.nativeElement.getAttribute(this._activeAttribute) === 'true') {
-      this._el.nativeElement.focus && this._el.nativeElement.focus();
-    }
+    this._el.nativeElement.focus && this._el.nativeElement.focus();
   }
   writeValue(obj: any): void {
     // Check if obj is string, if not set to empty string
@@ -430,7 +434,6 @@ export class GridTableCellInput
     }
 
     this._el.nativeElement.textContent = this._value();
-    this._focus();
   }
   registerOnChange(fn: any): void {
     this.onChangeFn = fn;
@@ -447,42 +450,27 @@ export class GridTableCellInput
 
     this._el.nativeElement.addEventListener('input', this.onInput.bind(this));
     this._el.nativeElement.addEventListener('blur', this.onBlur.bind(this));
-    // this._el.nativeElement.addEventListener('paste', this.onPaste.bind(this));
-    // this.observer.observe(this._el.nativeElement, {
-    //   attributes: true,
-    //   attributeFilter: [this._activeAttribute], // Only listen to this specific attribute
-    // });
+    this.observer.observe(this._el.nativeElement, {
+      attributes: true,
+      attributeFilter: [this._activeAttribute], // Only listen to this specific attribute
+    });
   }
   ngOnDestroy(): void {
     this._el.nativeElement.removeEventListener('input', this.onInput.bind(this));
     this._el.nativeElement.removeEventListener('blur', this.onBlur.bind(this));
-    // this._el.nativeElement.removeEventListener('paste', this.onPaste.bind(this));
-    //this.observer.disconnect();
-  }
-
-  private onPaste(event: ClipboardEvent): void {
-    event.preventDefault();
-    const text = event.clipboardData?.getData('text/plain') ?? '';
-    if (this._isJustFocus) {
-      this._value.set(text);
-      this.onChangeFn(text);
-      this._isJustFocus = false;
-    }
+    this.observer.disconnect();
   }
 
   private onInput(event: InputEvent): void {
     let text = (event.target as HTMLElement).textContent ?? '';
-    // if (this._isJustFocus) {
-    //   if (event.inputType === 'insertText' && event.data) {
-    //     text = event.data;
-    //     this._isJustFocus = false;
-    //   } else {
-    //     return; // Don't trigger change for other input types (e.g. deleteContentBackward) on first input after focus to prevent unexpected changes
-    //   }
-    // }
 
     this._value.set(text);
     this.onChangeFn(text);
+
+    setTimeout(() => {
+      // Focus back the element after change to prevent losing focus when typing fast
+      this._focus();
+    });
   }
 
   private onBlur(): void {
@@ -549,7 +537,6 @@ export class GridTableCellCheckbox
   }
 
   private onKeyDown(event: KeyboardEvent): void {
-    console.log('Checkbox keydown:', event.key);
     if (event.key !== 'Enter') {
       return;
     }
@@ -565,7 +552,7 @@ export class GridTableCellCheckbox
     });
   }
   private _focus() {
-    this._el.nativeElement.focus();
+    this._el.nativeElement.focus && this._el.nativeElement.focus();
   }
   private _onBlur(): void {
     this.onTouchedFn();
