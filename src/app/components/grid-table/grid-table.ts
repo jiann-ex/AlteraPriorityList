@@ -366,23 +366,71 @@ export class GridTableCellInput
   extends GridTableCell
   implements ControlValueAccessor, OnInit, OnDestroy
 {
+  private readonly _activeAttribute = 'data-active';
   private readonly _value = signal<string | null>(null);
   private readonly _el = inject(ElementRef);
   private onTouchedFn: () => void = () => {};
   private onChangeFn: (value: string) => void = () => {};
+  private readonly observer: MutationObserver;
+  private _isJustFocus = true;
 
   constructor() {
     super();
+
+    this.observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes') {
+          const isActive = this._el.nativeElement.getAttribute(this._activeAttribute) === 'true';
+          // if (isActive) {
+          //   // this._isJustFocus = true;
+          //   this._highlight();
+          //   setTimeout(() => {
+          //     this._focus();
+          //   });
+          // }
+        }
+      });
+    });
   }
-  writeValue(obj: string): void {
+
+  private _highlight(highlight: boolean = true) {
+    // Highlight the whole cell
+    const range = document.createRange();
+    range.selectNodeContents(this._el.nativeElement);
+    const selection = window.getSelection();
+
+    if (selection) {
+      selection.removeAllRanges();
+      if (highlight) {
+        selection.addRange(range);
+      }
+    }
+  }
+  private _focus() {
+    // When el is focusing and receive new value, the focus will be lost,
+    // so only focus when the element is not focusing to prevent interrupt user input
+    if (this._el.nativeElement.getAttribute(this._activeAttribute) === 'true') {
+      this._el.nativeElement.focus && this._el.nativeElement.focus();
+    }
+  }
+  writeValue(obj: any): void {
     // Check if obj is string, if not set to empty string
-    if ((obj && typeof obj !== 'string') || !obj) {
-      obj = '';
+    if (obj && typeof obj !== 'string') {
+      let objStr: string | null;
+      try {
+        objStr = String(obj);
+      } catch {
+        objStr = null;
+      }
+      this._value.set(objStr);
+    } else if (!obj) {
+      this._value.set(null);
     } else {
       this._value.set(obj);
     }
 
     this._el.nativeElement.textContent = this._value();
+    this._focus();
   }
   registerOnChange(fn: any): void {
     this.onChangeFn = fn;
@@ -399,14 +447,40 @@ export class GridTableCellInput
 
     this._el.nativeElement.addEventListener('input', this.onInput.bind(this));
     this._el.nativeElement.addEventListener('blur', this.onBlur.bind(this));
+    // this._el.nativeElement.addEventListener('paste', this.onPaste.bind(this));
+    // this.observer.observe(this._el.nativeElement, {
+    //   attributes: true,
+    //   attributeFilter: [this._activeAttribute], // Only listen to this specific attribute
+    // });
   }
   ngOnDestroy(): void {
     this._el.nativeElement.removeEventListener('input', this.onInput.bind(this));
     this._el.nativeElement.removeEventListener('blur', this.onBlur.bind(this));
+    // this._el.nativeElement.removeEventListener('paste', this.onPaste.bind(this));
+    //this.observer.disconnect();
   }
 
-  private onInput(event: Event): void {
-    const text = (event.target as HTMLElement).textContent ?? '';
+  private onPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text/plain') ?? '';
+    if (this._isJustFocus) {
+      this._value.set(text);
+      this.onChangeFn(text);
+      this._isJustFocus = false;
+    }
+  }
+
+  private onInput(event: InputEvent): void {
+    let text = (event.target as HTMLElement).textContent ?? '';
+    // if (this._isJustFocus) {
+    //   if (event.inputType === 'insertText' && event.data) {
+    //     text = event.data;
+    //     this._isJustFocus = false;
+    //   } else {
+    //     return; // Don't trigger change for other input types (e.g. deleteContentBackward) on first input after focus to prevent unexpected changes
+    //   }
+    // }
+
     this._value.set(text);
     this.onChangeFn(text);
   }

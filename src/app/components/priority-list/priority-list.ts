@@ -215,24 +215,33 @@ export class PriorityList implements OnInit, OnDestroy {
     this.viewport?.scrollToIndex(0);
   }
 
-  getSortIcon(column: string): string {
-    if (this.sortColumn() !== column) return '↕';
-    return this.sortDirection() === 'asc' ? '↑' : '↓';
-  }
-
-  getCellValue(item: Priority | undefined, key: keyof Priority): string {
-    if (!item) return '';
-    const val = item[key];
-    if (val === null || val === undefined) return '';
-    if (typeof val === 'boolean') return val ? '✓' : '';
-    return String(val);
-  }
-
   onCellInput(event: string, rowIndex: number, colKey: keyof Priority): void {
     console.log('Input event:', {
       rowIndex,
       colKey,
       event,
     });
+    console.log(this.priorityGrouped());
   }
+
+  /** For R1 and R2 column */
+  editNumberItem(
+    dataSource: PriorityListDataSource,
+    index: number,
+    field: keyof Priority,
+    value: string,
+  ): void {
+    const parsed = parseInt(value);
+    if (isNaN(parsed)) {
+      dataSource.editItem(index, field, null);
+    } else {
+      dataSource.editItem(index, field, parsed);
+    }
+  }
+  editBooleanItem(
+    dataSource: PriorityListDataSource,
+    row: Priority,
+    field: keyof Priority,
+    value: boolean,
+  ): void {}
 }

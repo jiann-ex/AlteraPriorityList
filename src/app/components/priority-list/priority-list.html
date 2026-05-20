@@ -70,7 +70,7 @@
         >
           <div
             gridTableCell
-            [rowIndex]="groupIndex + groupIndex * group.total"
+            [rowIndex]="groupIndex * (priorityGrouped()[groupIndex - 1]?.total ?? 0)"
             [colIndex]="0"
             class="col-span-full flex items-center gap-2 font-medium"
           >
@@ -82,12 +82,20 @@
               "
               class="text-xs"
             ></ng-icon>
-            {{ group.r1 ?? 'No Priority' }} ({{ group.total }})
+            <span>{{ group.r1 ?? 'No Priority' }}</span>
+            <span>({{ group.total }})</span>
+            @if (group.dataSource.loading$ | async) {
+              <hlm-spinner size="sm" /> <span class="text-muted-foreground">Fetching data...</span>
+            }
           </div>
         </div>
         <!-- Data rows -->
         @if (groupExpanded()[group.key]) {
-          <div gridTableRow *cdkVirtualFor="let row of group.dataSource; let rowIndex = index">
+          <div
+            class="h-10"
+            gridTableRow
+            *cdkVirtualFor="let row of group.dataSource; let rowIndex = index"
+          >
             @for (col of columns(); let colIndex = $index; track col.key) {
               @if (!row) {
                 <div
@@ -120,7 +128,7 @@
                       [colIndex]="colIndex"
                       [class]="col.class ?? ''"
                       [ngModel]="row[col.key]"
-                      (ngModelChange)="onCellInput($event, rowIndex, col.key)"
+                      (ngModelChange)="editNumberItem(group.dataSource, rowIndex, col.key, $event)"
                     ></div>
                   }
                   @default {

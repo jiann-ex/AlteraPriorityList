@@ -41,7 +41,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
    * Stored edited items and update the data to the edited one
    * when there is match with the id
    */
-  private readonly _editedItems: Priority[] = [];
+  private readonly _editedItems: Map<number, Priority> = new Map();
 
   constructor(
     private readonly service: PriorityListService,
@@ -77,6 +77,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
         takeUntil(this.destroy$),
       )
       .subscribe((range) => {
+        console.log(this.data.value.length);
         this._fetchRange(range);
       });
     // In template, can directly use in *cdkVirtualFor="let item of dataSource"
@@ -96,6 +97,20 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
 
   refresh(): void {
     this._reset();
+  }
+
+  // Eventho replace with new instance is recommended
+  // But i think its expensive to create new instance every time when edit an item
+  editItem(index: number, field: keyof Priority, value: unknown): void {
+    const current = this.data.value;
+    const item = current[index];
+
+    if (!item) return;
+
+    current[index] = { ...item, [field]: value };
+    this.data.next(current);
+    this._editedItems.set(index, current[index]);
+    console.log(`Update items`, current[index], current);
   }
 
   private _reset(): void {
@@ -124,12 +139,6 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     const offset = range.start;
     const limit = range.end - range.start;
 
-    const startPage = Math.floor(range.start / PAGE_SIZE);
-    const endPage = Math.floor((range.end - 1) / PAGE_SIZE);
-
-    // for (let page = startPage; page <= endPage; page++) {
-    //   this.fetchPage(page);
-    // }
     if (this._isRangeFetched(range)) {
       console.log(`Range ${range.start}-${range.end} already fetched, skip API call.`);
       return;
@@ -138,7 +147,6 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   }
 
   private _fetchPage(offset: number, limit: number, range: ListRange): void {
-    // if (this.fetchedPages.has(pageIndex)) return;
     if (range) {
       this.fetched.add(range);
     }
@@ -154,10 +162,9 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
       next: (response) => {
         const total = response.count;
         this.totalCount.next(total);
-        console.log(`Fetched page for group, total=${total}`);
 
         // Expand the sparse array to match total size
-        const current = this.data.value.slice();
+        const current = this.data.value;
         if (current.length < total) {
           current.length = total;
         }
@@ -166,7 +173,11 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
         //const offset = pageIndex * PAGE_SIZE;
         const offset = query.offset;
         for (let i = 0; i < response.data.length; i++) {
-          current[offset + i] = response.data[i];
+          if (this._editedItems.has(offset + i)) {
+            response.data[i] = this._editedItems.get(offset + i)!;
+          } else {
+            current[offset + i] = response.data[i];
+          }
         }
 
         this.data.next(current);
