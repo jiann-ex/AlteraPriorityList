@@ -6,6 +6,16 @@
   -----------------------
   After edit or something we just
 -->
+<div>
+  <div class="flex items-center gap-4 px-2 py-1">
+    <span class="text-sm text-muted-foreground">Total {{ totalCount() }} rows</span>
+    @if (totalEdited() > 0) {
+      <span class="text-sm text-yellow-500">You have {{ totalEdited() }} unsaved changes</span>
+      <button hlmBtn>Save Changes</button>
+    }
+  </div>
+</div>
+
 <div
   class="overflow-x-auto"
   gridTable
@@ -48,7 +58,7 @@
       </div>
     </div>
   } @else {
-    @for (group of priorityGrouped(); let groupIndex = $index; track group.r1) {
+    @for (group of priorityGrouped(); let groupIndex = $index; track group.key) {
       <cdk-virtual-scroll-viewport
         gridTableBody
         class="overflow-x-hidden"
@@ -65,7 +75,7 @@
           class="h-10"
           gridTableGroupRow
           sticky
-          [expanded]="groupExpanded()[group.r1 ?? -1]"
+          [expanded]="groupExpanded()[group.key]"
           (toggled)="toggleExpand(group, cdkViewport)"
         >
           <div
@@ -76,9 +86,7 @@
           >
             <ng-icon
               [name]="
-                groupExpanded()[group.r1 ?? -1]
-                  ? 'lucideCircleChevronDown'
-                  : 'lucideCircleChevronRight'
+                groupExpanded()[group.key] ? 'lucideCircleChevronDown' : 'lucideCircleChevronRight'
               "
               class="text-xs"
             ></ng-icon>

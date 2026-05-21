@@ -4,6 +4,8 @@ import { debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs/op
 import { Priority } from '../types/priority';
 import { PriorityListService, Query } from './priority-list.service';
 import type { PriorityData } from '../types';
+import { computed, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 /**
  * Scroll debounce time in milliseconds, meaning wait 300ms after user stop scroll
@@ -29,18 +31,23 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   private _data: PriorityData[] = [];
   private data!: BehaviorSubject<PriorityData[]>;
   private readonly loading = new BehaviorSubject<boolean>(false);
-  private readonly totalCount = new BehaviorSubject<number>(0);
+  private readonly totalCount;
   private destroy$ = new Subject<void>();
   /** Stored set of fetched list range to prevent refetch same thing again */
   private fetched = new Set<ListRange>();
 
   readonly loading$ = this.loading.asObservable();
-  readonly totalCount$ = this.totalCount.asObservable();
+  get totalCount$() {
+    return this.totalCount.asObservable();
+  }
+
   /**
    * Stored edited items and update the data to the edited one
    * when there is match with the id
    */
-  private readonly _editedItems: Map<string, Priority> = new Map();
+  private readonly _editedItems = signal<Map<string, PriorityData>>(new Map());
+  readonly editedItems = computed(() => Array.from(this._editedItems().values()));
+  readonly totalEdited = computed(() => this._editedItems().size);
 
   constructor(
     private readonly service: PriorityListService,
@@ -48,6 +55,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     readonly initialTotal: number = 0,
   ) {
     super();
+    this.totalCount = new BehaviorSubject<number>(this.initialTotal);
     this._data = Array.from({ length: initialTotal }, () => null);
   }
 
@@ -114,7 +122,11 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
 
     current[index] = { ...item, [field]: value };
     this.data.next(current);
-    this._editedItems.set(priority.id, current[index]);
+    this._editedItems.update((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(priority.id, current[index]);
+      return newMap;
+    });
   }
   private _reset(): void {
     this.fetched.clear();
@@ -194,8 +206,8 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
           // Place fetched items at the correct offset
           const offset = query.offset;
           for (let i = 0; i < response.data.length; i++) {
-            if (this._editedItems.has(response.data[i].id)) {
-              response.data[i] = this._editedItems.get(response.data[i].id)!;
+            if (this._editedItems().has(response.data[i].id)) {
+              response.data[i] = this._editedItems().get(response.data[i].id)!;
             } else {
               current[offset + i] = response.data[i];
             }
@@ -211,11 +223,6 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
           this.fetched.delete(range);
         },
       });
-  }
-
-  /** Retrieve list of edited items ready send to the backend */
-  getEditedItems(): Priority[] {
-    return Array.from(this._editedItems.values());
   }
 
   /** Update a single item in the local cache (after API confirms the save). */

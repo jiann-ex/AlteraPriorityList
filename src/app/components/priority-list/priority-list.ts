@@ -7,7 +7,7 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 import { PriorityListService } from '../../services/priority-list.service';
 import { GroupedDataSource } from '../../services/grouped-datasource';
 import { FormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { combineLatest, forkJoin, Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import type { ColumnDef } from '../../types/column-def';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -22,6 +22,7 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCircleChevronDown, lucideCircleChevronRight } from '@ng-icons/lucide';
 import { PriorityListDataSource } from '../../services/priority-list-datasource';
 import { AsyncPipe, NgClass } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-priority-list',
@@ -65,8 +66,14 @@ export class PriorityList implements OnInit, OnDestroy {
   groupedSource!: GroupedDataSource<Priority>;
   isLoading = signal(false);
   totalCount = signal(0);
-
   priorityGrouped = signal<PriorityGroup[]>([]);
+  totalEdited = computed(() =>
+    this.priorityGrouped().reduce((sum, group) => sum + group.dataSource.totalEdited(), 0),
+  );
+  editedItems = computed(() =>
+    this.priorityGrouped().flatMap((group) => group.dataSource.editedItems()),
+  );
+
   groupExpanded = signal<Record<string, boolean>>({});
 
   sortColumn = signal<string | null>(null);
@@ -77,15 +84,34 @@ export class PriorityList implements OnInit, OnDestroy {
   filters: Record<string, string> = {};
 
   protected readonly columns = signal<ColumnDef[]>([
-    { key: 'id', label: 'ID' },
-    { key: 'vpo', label: 'VPO' },
+    { key: 'priority', label: 'Priority' },
+    { key: 'r1', label: 'R1' },
+    { key: 'r2', label: 'R2' },
     { key: 'equipment', label: 'Equipment' },
-    { key: 'stepSequence', label: 'Step' },
-    { key: 'priority', label: 'Priority', editable: true },
-    { key: 'r1', label: 'R1', class: 'text-right', editable: false },
-    { key: 'r2', label: 'R2', class: 'text-right', editable: false },
+    { key: 'vpo', label: 'VPO' },
     { key: 'vpoForecastQuantity', label: 'Forecast Qty', class: 'text-right' },
     { key: 'testTimePerUnit', label: 'Test Time', class: 'text-right' },
+    { key: 'locationCode', label: 'Location' },
+    { key: 'vpoSource', label: 'VPO Source' },
+    { key: 'vpoDescription', label: 'VPO Description' },
+    { key: 'stepSequence', label: 'Step Sequence' },
+    { key: 'step', label: 'Step' },
+    { key: 'engineerName', label: 'Engineer Name' },
+    { key: 'stepComment', label: 'Step Comment' },
+    { key: 'product', label: 'Product' },
+    { key: 'partType', label: 'Part Type' },
+    { key: 'stepState', label: 'Step State' },
+    { key: 'engId', label: 'Eng ID' },
+    { key: 'vpoType', label: 'VPO Type' },
+    { key: 'stepType', label: 'Step Type' },
+    { key: 'activityType', label: 'Activity Type' },
+    { key: 'stepSpecialInstruction', label: 'Special Instruction' },
+    { key: 'stepTimeDuration', label: 'Step Duration' },
+    { key: 'recipe', label: 'Recipe' },
+    { key: 'lastChangesBy', label: 'Last Changes By' },
+    { key: 'hri', label: 'HRI' },
+    { key: 'mrv', label: 'MRV' },
+    { key: 'qdf', label: 'QDF' },
   ]);
 
   columnWidths = signal<Record<string, number>>(
@@ -108,7 +134,23 @@ export class PriorityList implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((res) => {
         this.priorityGrouped.set(res);
+        combineLatest(this.priorityGrouped().map((group) => group.dataSource.totalCount$))
+          .pipe(takeUntil(this.destroy$))
+          .subscribe((counts) => {
+            console.log('Total counts from all groups:', counts);
+            const total = counts.reduce((sum, count) => sum + count, 0);
+            this.totalCount.set(total);
+            // Update each group's total count in priorityGrouped signal
+            for (let i = 0; i < counts.length; i++) {
+              this.priorityGrouped.update((groups) => {
+                const newGroups = [...groups];
+                newGroups[i] = new PriorityGroup(groups[i].r1, counts[i], groups[i].dataSource);
+                return newGroups;
+              });
+            }
+          });
       });
+
     this.groupedSource = new GroupedDataSource<Priority>(
       {
         groupBy: (item) => String(item.r1),

@@ -2,21 +2,49 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '@environment';
 import { PagedList } from '../types/paged-list';
-import { Priority, PriorityGroup } from '../types/priority';
+import { mapPriorityFrom, Priority, PriorityGroup, PriorityResponse } from '../types/priority';
 import { delay, Observable, of, tap } from 'rxjs';
 import { PriorityListDataSource } from './priority-list-datasource';
 
 const TOTAL_MOCK_SIZE = 10000;
-const MOCK_DATA: Priority[] = Array.from({ length: TOTAL_MOCK_SIZE }, (_, i) => ({
+const MOCK_DATA: PriorityResponse[] = Array.from({ length: TOTAL_MOCK_SIZE }, (_, i) => ({
   id: `mock-${i}`,
-  priority: i % 3 === 0,
-  r1: i > 100 ? (i % 5) + 1 : null,
-  r2: i > 100 ? (i % 4) + 1 : null,
-  vpo: `VPO-${String(i).padStart(5, '0')}`,
+  isPriority: i % 3 === 0,
+  priorityR1: i > 100 ? (i % 5) + 1 : null,
+  priorityR2: i > 100 ? (i % 4) + 1 : null,
   equipment: `EQ-${String((i % 50) + 1).padStart(3, '0')}`,
-  stepSequence: `S${(i % 10) + 1}`,
+  vpo: `VPO-${String(i).padStart(5, '0')}`,
   vpoForecastQuantity: Math.floor(Math.random() * 500) + 50,
-  testTimePerUnit: +(Math.random() * 10 + 1).toFixed(2),
+  testPerUnit: +(Math.random() * 10 + 1).toFixed(2),
+  locationCode: i % 4 === 0 ? `LOC-${(i % 10) + 1}` : null,
+  vpoSource: i % 3 === 0 ? `SRC-${i % 5}` : null,
+  vpoDescription: `Description for VPO ${i}`,
+  stepSeq: `${(i % 10) + 1}`,
+  stepSeqDisplay: `S${(i % 10) + 1}`,
+  step: `STEP-${(i % 20) + 1}`,
+  engineerName: i % 2 === 0 ? `Engineer ${i % 15}` : null,
+  stepComment: i % 5 === 0 ? `Comment for step ${i}` : null,
+  product: `PROD-${(i % 8) + 1}`,
+  partType: i % 3 === 0 ? `PT-${i % 6}` : null,
+  stepState: i % 2 === 0 ? 'Active' : null,
+  engId: i % 2 === 0 ? `ENG-${i % 20}` : null,
+  vpoType: i % 4 === 0 ? `Type-${i % 3}` : null,
+  stepType: `ST-${i % 5}`,
+  activityType: i % 3 === 0 ? `ACT-${i % 4}` : null,
+  stepSpecialInstruction: i % 10 === 0 ? `Special instruction ${i}` : null,
+  stepTimeDuration: `${(i % 60) + 1}`,
+  recipe: i % 4 === 0 ? `RCP-${i % 12}` : null,
+  lastChangesBy: i % 2 === 0 ? `User ${i % 10}` : null,
+  hri: i % 5 === 0 ? `HRI-${i % 8}` : null,
+  mrv: i % 6 === 0 ? `MRV-${i % 4}` : null,
+  qdf: i % 7 === 0 ? `QDF-${i % 3}` : null,
+  taskTemperature: i % 3 === 0 ? `${20 + (i % 30)}` : null,
+  vpoCreatedOn: `2025-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
+  vpoStatus: i % 4,
+  platformValue: i % 3 === 0 ? `Platform ${i % 5}` : null,
+  platform: i % 5,
+  isCurrentWorking: i % 7 === 0,
+  vpoStepStatus: i % 3,
 }));
 
 export interface PriorityQuery {
@@ -47,7 +75,7 @@ export class PriorityListService {
     // --- MOCK: simulate server delay with 10k test data ---
     const groupMap = new Map<number | null, number>();
     for (const item of MOCK_DATA) {
-      const key = item.r1;
+      const key = item.priorityR1;
       groupMap.set(key, (groupMap.get(key) ?? 0) + 1);
     }
     const data = Array.from(groupMap.entries()).map(([r1, total]) => ({ r1, total }));
@@ -67,10 +95,10 @@ export class PriorityListService {
 
   getPriorityListByGroup(r1: number | null, query: Query): Observable<PagedList<Priority>> {
     // --- MOCK: simulate server delay with 10k test data ---
-    const filtered = MOCK_DATA.filter((item) => item.r1 === r1);
+    const filtered = MOCK_DATA.filter((item) => item.priorityR1 === r1);
     const offset = query.offset;
     const limit = query.limit;
-    const page = filtered.slice(offset, offset + limit);
+    const page = filtered.slice(offset, offset + limit).map(mapPriorityFrom);
     return of<PagedList<Priority>>({
       data: page,
       count: filtered.length,
@@ -83,7 +111,7 @@ export class PriorityListService {
   getPriorityList(query: PriorityQuery): Observable<PagedList<Priority>> {
     // --- MOCK: simulate server delay with 10k test data ---
     const offset = (query.page - 1) * query.pageSize;
-    const page = MOCK_DATA;
+    const page = MOCK_DATA.map(mapPriorityFrom);
     return of<PagedList<Priority>>({
       data: page,
       count: TOTAL_MOCK_SIZE,
