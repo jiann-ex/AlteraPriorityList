@@ -2,8 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '@environment';
 import { PagedList } from '../types/paged-list';
-import { mapPriorityFrom, Priority, PriorityGroup } from '../types/priority';
-import { delay, map, Observable, of, tap } from 'rxjs';
+import { Priority, PriorityGroup } from '../types/priority';
+import { delay, Observable, of, tap } from 'rxjs';
 import { PriorityListDataSource } from './priority-list-datasource';
 
 const TOTAL_MOCK_SIZE = 10000;
@@ -58,7 +58,7 @@ export class PriorityListService {
     });
     return of(
       data.map((group) => {
-        const dataSource = new PriorityListDataSource(this, group.r1);
+        const dataSource = new PriorityListDataSource(this, group.r1, group.total);
         return new PriorityGroup(group.r1, group.total, dataSource);
       }),
     ).pipe(delay(200)); // Simulate 200ms network delay

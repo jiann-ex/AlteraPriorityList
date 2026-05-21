@@ -116,7 +116,9 @@
                       [colIndex]="colIndex"
                       [class]="col.class ?? ''"
                       [ngModel]="row[col.key]"
-                      (ngModelChange)="editBooleanItem(group.dataSource, rowIndex, col.key, $event)"
+                      (ngModelChange)="
+                        editBooleanItem(group.dataSource, rowIndex, row, col.key, $event)
+                      "
                     ></div>
                   }
                   @case ('r1')
@@ -128,7 +130,9 @@
                       [colIndex]="colIndex"
                       [class]="col.class ?? ''"
                       [ngModel]="row[col.key]"
-                      (ngModelChange)="editNumberItem(group.dataSource, rowIndex, col.key, $event)"
+                      (ngModelChange)="
+                        editNumberItem(group.dataSource, rowIndex, row, col.key, $event)
+                      "
                     ></div>
                   }
                   @default {

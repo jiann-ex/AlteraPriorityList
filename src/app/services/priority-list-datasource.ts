@@ -27,6 +27,7 @@ export type FilterState = Record<keyof Priority, string[] | string>;
  * Feed to cdk-virtual-scroll-viewport to provide an infinite scrolling experience.
  */
 export class PriorityListDataSource extends DataSource<PriorityData> {
+  private readonly _data: PriorityData[] = [];
   private data = new BehaviorSubject<PriorityData[]>([]);
   private loading = new BehaviorSubject<boolean>(false);
   private totalCount = new BehaviorSubject<number>(0);
@@ -41,13 +42,15 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
    * Stored edited items and update the data to the edited one
    * when there is match with the id
    */
-  private readonly _editedItems: Map<number, Priority> = new Map();
+  private readonly _editedItems: Map<string, Priority> = new Map();
 
   constructor(
     private readonly service: PriorityListService,
     private readonly groupKey: number | null,
+    readonly initialTotal: number = 0,
   ) {
     super();
+    this._data = Array.from({ length: initialTotal }, () => null);
   }
 
   private _init() {
@@ -65,6 +68,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   }
 
   connect(collectionViewer: CollectionViewer): Observable<PriorityData[]> {
+    //this.data.next(this._data);
     collectionViewer.viewChange
       .pipe(
         // Only trigger if the start or end of the view range changed,
@@ -81,11 +85,12 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
         this._fetchRange(range);
       });
     // In template, can directly use in *cdkVirtualFor="let item of dataSource"
+    console.log('DataSource connected for R1:', this.groupKey, this.data.value);
+    this.data.next(this._data);
     return this.data.asObservable();
   }
 
   disconnect(): void {
-    console.log('DataSource disconnected R1:', this.groupKey);
     // Under @if after disconnect get call when destroyed, causing the *cdkVirtualFor to be empty,
     // need to complete the subjects to prevent any further emissions
     // this.destroy$.next();
@@ -96,12 +101,13 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   }
 
   refresh(): void {
-    this._reset();
+    //this._reset();
+    //this.data.next(this._data);
   }
 
   // Eventho replace with new instance is recommended
   // But i think its expensive to create new instance every time when edit an item
-  editItem(index: number, field: keyof Priority, value: unknown): void {
+  editItem(index: number, priority: Priority, field: keyof Priority, value: unknown): void {
     const current = this.data.value;
     const item = current[index];
 
@@ -109,16 +115,25 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
 
     current[index] = { ...item, [field]: value };
     this.data.next(current);
-    this._editedItems.set(index, current[index]);
+    this._editedItems.set(priority.id, current[index]);
     console.log(`Update items`, current[index], current);
   }
-
   private _reset(): void {
     this.fetched.clear();
     this.data.next([]);
     this.totalCount.next(0);
+
     // Fetch first page immediately to get totalCount and initial data
     this._fetchRange({ start: 0, end: PAGE_SIZE });
+  }
+  /**
+   * Empty the data source without resetting the fetched ranges or total count.
+   * For to close the expanded row, clear the data will not making the cdk viewport confusing with the height calculation
+   *
+   * Public method for the expandable component to call this function when collapse the group
+   */
+  empty(): void {
+    this.data.next([]);
   }
 
   private _isRangeFetched(range: ListRange): boolean {
@@ -164,7 +179,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
         this.totalCount.next(total);
 
         // Expand the sparse array to match total size
-        const current = this.data.value;
+        const current = this._data;
         if (current.length < total) {
           current.length = total;
         }
@@ -173,8 +188,8 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
         //const offset = pageIndex * PAGE_SIZE;
         const offset = query.offset;
         for (let i = 0; i < response.data.length; i++) {
-          if (this._editedItems.has(offset + i)) {
-            response.data[i] = this._editedItems.get(offset + i)!;
+          if (this._editedItems.has(response.data[i].id)) {
+            response.data[i] = this._editedItems.get(response.data[i].id)!;
           } else {
             current[offset + i] = response.data[i];
           }

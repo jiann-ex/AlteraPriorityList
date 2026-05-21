@@ -11,7 +11,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import type { ColumnDef } from '../../types/column-def';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
-import { SortDirection } from '@app-types';
+import { PriorityData, SortDirection } from '@app-types';
 import { PriorityListTh } from '../priority-list-th/priority-list-th';
 import { createColumnWidths } from '../priority-list-th';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
@@ -135,9 +135,11 @@ export class PriorityList implements OnInit, OnDestroy {
 
     // this.groupExpanded()[group.r1 ?? -1] = !this.groupExpanded()[group.r1 ?? -1];
     this.groupExpanded.update((prev) => ({ ...prev, [group.key]: !(prev[group.key] ?? false) }));
+    const isNowExpanded = this.groupExpanded()[group.key];
     // After toggling the group, we need to manually trigger the viewport to check the new range and fetch data if needed
     //viewport.scrollToIndex(0); // Scroll to top to trigger data fetch for the newly expanded group
-    //viewport.checkViewportSize(); // Check if the viewport needs to fetch more data based on the new expanded state
+    viewport.checkViewportSize(); // Check if the viewport needs to fetch more data based on the new expanded state
+    viewport.scrollToIndex(0); // Scroll to top to trigger data fetch for the newly expanded group
     //this.priorityDataSources()[String(r1)]?.refresh(); // Refresh the data source for the group to fetch data if it's expanded
     // Looks like reinitialize fix the issue it become empty after toggle
     // this.priorityDataSources.update((prev) => {
@@ -149,7 +151,11 @@ export class PriorityList implements OnInit, OnDestroy {
     //   //prev[key] = new PriorityListDataSource(this.service, r1);
     //   return { ...prev };
     // });
-    group.dataSource.refresh(); // @TODO: See why without refresh is not working
+
+    if (!isNowExpanded) {
+      group.dataSource.empty();
+      console.log('Clear the data source');
+    }
   }
   printDataSource(e: any): void {
     //console.log(e);
@@ -210,28 +216,32 @@ export class PriorityList implements OnInit, OnDestroy {
   editNumberItem(
     dataSource: PriorityListDataSource,
     index: number,
+    data: PriorityData,
     field: keyof Priority,
     value: string,
   ): void {
+    if (!data) return;
     const parsed = parseInt(value);
     if (isNaN(parsed)) {
-      dataSource.editItem(index, field, null);
+      dataSource.editItem(index, data, field, null);
     } else {
-      dataSource.editItem(index, field, parsed);
+      dataSource.editItem(index, data, field, parsed);
     }
   }
   editBooleanItem(
     dataSource: PriorityListDataSource,
     index: number,
+    data: PriorityData,
     field: keyof Priority,
     value: boolean,
   ): void {
+    if (!data) return;
     console.log('Boolean input event:', {
       rowIndex: index,
       colKey: field,
       event: value,
     });
     const parsed = Boolean(value);
-    dataSource.editItem(index, field, parsed);
+    dataSource.editItem(index, data, field, parsed);
   }
 }
