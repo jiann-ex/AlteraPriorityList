@@ -15,9 +15,10 @@ import {
 import { ColumnDef } from '../../types/column-def';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideFilterX, lucideSortAsc, lucideSortDesc, lucideTrash } from '@ng-icons/lucide';
-import { SortDirection } from '@app-types';
+import { NullableString, SortDirection } from '@app-types';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmDropdownMenuImports, HlmDropdownMenuTrigger } from '@spartan-ng/helm/dropdown-menu';
+import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 
 // Custom virtual scroll settings
 const OPTION_HEIGHT = 32; // px per item
@@ -26,7 +27,7 @@ const BUFFER = 3; // extra items above/below
 
 @Component({
   selector: '[appPriorityListTh], [appPriorityListCol]',
-  imports: [NgIcon, HlmButtonImports, HlmDropdownMenuImports],
+  imports: [NgIcon, HlmButtonImports, HlmDropdownMenuImports, HlmSkeletonImports],
   templateUrl: './priority-list-th.html',
   viewProviders: [
     provideIcons({
@@ -66,7 +67,6 @@ export class PriorityListTh implements OnInit {
     host: true,
   });
   private readonly _el = inject(ElementRef<HTMLElement>);
-  private readonly _zone = inject(NgZone);
   private readonly _destroyRef = inject(DestroyRef);
 
   constructor() {}
@@ -78,7 +78,7 @@ export class PriorityListTh implements OnInit {
     });
   }
 
-  protected options = signal<string[]>(
+  protected options = signal<NullableString[]>(
     Array.from({ length: 100000 }, (_, i) =>
       i > 10000 ? `Option123234123321 312441233412 ${i + 1}` : `Option ${i + 1}`,
     ),

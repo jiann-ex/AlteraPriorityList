@@ -150,6 +150,30 @@ export class PriorityListService {
     //   );
   }
 
+  getPriorityFilterOptions(
+    prop: keyof PriorityResponse,
+    query: Query,
+  ): Observable<PagedList<string>> {
+    // --- MOCK: return unique values for the requested property from the mock data ---
+    const offset = query.offset;
+    const limit = query.limit;
+    const options = Array.from(
+      new Set(
+        MOCK_DATA.slice(offset, offset + limit).map((item) => item[prop as keyof PriorityResponse]),
+      ),
+    )
+      .filter((option) => option !== null && option !== undefined)
+      .map((option) => String(option));
+    options.sort((a, b) => a.localeCompare(b));
+    return of<PagedList<string>>({
+      data: options,
+      count: options.length,
+      page: -1,
+      pageSize: query.limit,
+    }).pipe(delay(100)); // Simulate 100ms network delay
+    // --- END MOCK ---
+  }
+
   updatePriority(id: string, field: 'r1' | 'r2', value: number): Observable<Priority> {
     return this.httpClient.patch<Priority>(
       `${this.apiUrl}/api/mes/vpoPriority/${encodeURIComponent(id)}`,

@@ -70,14 +70,20 @@
               [style.top.px]="entry.offsetTop"
               [style.height.px]="optionHeight"
             >
-              <button
-                hlmDropdownMenuCheckbox
-                [checked]="selectedOptions().has(entry.option)"
-                (triggered)="toggleOption(entry.option)"
-              >
-                <hlm-dropdown-menu-checkbox-indicator />
-                <span class="text-nowrap text-ellipsis overflow-hidden">{{ entry.option }}</span>
-              </button>
+              @if (entry.option) {
+                <button
+                  hlmDropdownMenuCheckbox
+                  [checked]="selectedOptions().has(entry.option)"
+                  (triggered)="toggleOption(entry.option)"
+                >
+                  <hlm-dropdown-menu-checkbox-indicator />
+                  <span class="text-nowrap text-ellipsis overflow-hidden">{{ entry.option }}</span>
+                </button>
+              } @else {
+                <div class="h-full flex items-center justify-center">
+                  <hlm-skeleton class="h-4 w-full" />
+                </div>
+              }
             </div>
           }
         </div>

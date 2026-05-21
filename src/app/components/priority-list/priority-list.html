@@ -61,7 +61,7 @@
     @for (group of priorityGrouped(); let groupIndex = $index; track group.key) {
       <cdk-virtual-scroll-viewport
         gridTableBody
-        class="overflow-x-hidden"
+        class="overflow-x-hidden!"
         [ngClass]="{
           'h-80': groupExpanded()[group.key],
           'h-10': !groupExpanded()[group.key],

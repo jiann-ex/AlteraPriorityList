@@ -75,6 +75,38 @@ export interface Priority {
   qdf: NullableString;
 }
 
+export const priorityToMaps = new Map<keyof Priority, keyof PriorityResponse>([
+  ['id', 'id'],
+  ['priority', 'isPriority'],
+  ['r1', 'priorityR1'],
+  ['r2', 'priorityR2'],
+  ['equipment', 'equipment'],
+  ['vpo', 'vpo'],
+  ['vpoForecastQuantity', 'vpoForecastQuantity'],
+  ['testTimePerUnit', 'testPerUnit'],
+  ['locationCode', 'locationCode'],
+  ['vpoSource', 'vpoSource'],
+  ['vpoDescription', 'vpoDescription'],
+  ['stepSequence', 'stepSeqDisplay'],
+  ['step', 'step'],
+  ['engineerName', 'engineerName'],
+  ['stepComment', 'stepComment'],
+  ['product', 'product'],
+  ['partType', 'partType'],
+  ['stepState', 'stepState'],
+  ['engId', 'engId'],
+  ['vpoType', 'vpoType'],
+  ['stepType', 'stepType'],
+  ['activityType', 'activityType'],
+  ['stepSpecialInstruction', 'stepSpecialInstruction'],
+  ['stepTimeDuration', 'stepTimeDuration'],
+  ['recipe', 'recipe'],
+  ['lastChangesBy', 'lastChangesBy'],
+  ['hri', 'hri'],
+  ['mrv', 'mrv'],
+  ['qdf', 'qdf'],
+]);
+
 /** Map from API response to Priority */
 export const mapPriorityFrom = (data: PriorityResponse): Priority =>
   ({
