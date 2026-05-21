@@ -355,6 +355,8 @@ export class GridTableCell {
   selector: '[gridTableCellInput]',
   host: {
     contenteditable: '',
+    '(input)': 'onInput($event)',
+    '(blur)': 'onBlur()',
   },
   providers: [
     {
@@ -417,7 +419,10 @@ export class GridTableCellInput
     }
   }
   private _focus() {
-    this._el.nativeElement.focus && this._el.nativeElement.focus();
+    setTimeout(() => {
+      // Focus back the element after change to prevent losing focus when typing fast
+      this._el.nativeElement.focus && this._el.nativeElement.focus();
+    });
   }
   writeValue(obj: any): void {
     // Check if obj is string, if not set to empty string
@@ -450,32 +455,25 @@ export class GridTableCellInput
   ngOnInit(): void {
     this._el.nativeElement.textContent = this._value();
 
-    this._el.nativeElement.addEventListener('input', this.onInput.bind(this));
-    this._el.nativeElement.addEventListener('blur', this.onBlur.bind(this));
     this.observer.observe(this._el.nativeElement, {
       attributes: true,
       attributeFilter: [this._activeAttribute], // Only listen to this specific attribute
     });
   }
   ngOnDestroy(): void {
-    this._el.nativeElement.removeEventListener('input', this.onInput.bind(this));
-    this._el.nativeElement.removeEventListener('blur', this.onBlur.bind(this));
     this.observer.disconnect();
   }
 
-  private onInput(event: InputEvent): void {
+  protected onInput(event: Event): void {
     let text = (event.target as HTMLElement).textContent ?? '';
 
     this._value.set(text);
     this.onChangeFn(text);
 
-    setTimeout(() => {
-      // Focus back the element after change to prevent losing focus when typing fast
-      this._focus();
-    });
+    this._focus();
   }
 
-  private onBlur(): void {
+  protected onBlur(): void {
     this.onTouchedFn();
   }
 }
