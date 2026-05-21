@@ -165,6 +165,7 @@ export class PriorityList implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.groupedSource?.disconnect();
+    this.priorityGrouped().forEach((group) => group.dataSource.disconnect());
   }
 
   onGroupToggle(key: string): void {

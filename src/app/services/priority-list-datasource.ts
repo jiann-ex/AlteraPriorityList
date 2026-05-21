@@ -1,11 +1,10 @@
 import { CollectionViewer, DataSource, ListRange } from '@angular/cdk/collections';
-import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
-import { debounce, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs/operators';
 import { Priority } from '../types/priority';
 import { PriorityListService, Query } from './priority-list.service';
 import type { PriorityData } from '../types';
 
-const PAGE_SIZE = 50;
 /**
  * Scroll debounce time in milliseconds, meaning wait 300ms after user stop scroll
  * Prevent trigger unintended request when user scrolling fast
@@ -27,17 +26,16 @@ export type FilterState = Record<keyof Priority, string[] | string>;
  * Feed to cdk-virtual-scroll-viewport to provide an infinite scrolling experience.
  */
 export class PriorityListDataSource extends DataSource<PriorityData> {
-  private readonly _data: PriorityData[] = [];
-  private data = new BehaviorSubject<PriorityData[]>([]);
-  private loading = new BehaviorSubject<boolean>(false);
-  private totalCount = new BehaviorSubject<number>(0);
+  private _data: PriorityData[] = [];
+  private data!: BehaviorSubject<PriorityData[]>;
+  private readonly loading = new BehaviorSubject<boolean>(false);
+  private readonly totalCount = new BehaviorSubject<number>(0);
   private destroy$ = new Subject<void>();
   /** Stored set of fetched list range to prevent refetch same thing again */
   private fetched = new Set<ListRange>();
 
   readonly loading$ = this.loading.asObservable();
   readonly totalCount$ = this.totalCount.asObservable();
-  readonly data$ = this.data.asObservable();
   /**
    * Stored edited items and update the data to the edited one
    * when there is match with the id
@@ -53,21 +51,27 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     this._data = Array.from({ length: initialTotal }, () => null);
   }
 
+  /** Initialize all subjects */
   private _init() {
     this.data = new BehaviorSubject<PriorityData[]>([]);
-    this.loading = new BehaviorSubject<boolean>(false);
-    this.totalCount = new BehaviorSubject<number>(0);
     this.destroy$ = new Subject<void>();
   }
+  /** Clean up all subjects to prevent memory leaks */
   private _destroy() {
     this.destroy$.next();
     this.destroy$.complete();
     this.data.complete();
+  }
+
+  destroy() {
+    this._destroy();
     this.loading.complete();
     this.totalCount.complete();
+    this._data.length = 0;
   }
 
   connect(collectionViewer: CollectionViewer): Observable<PriorityData[]> {
+    this._init();
     //this.data.next(this._data);
     collectionViewer.viewChange
       .pipe(
@@ -81,7 +85,6 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
         takeUntil(this.destroy$),
       )
       .subscribe((range) => {
-        console.log(this.data.value.length);
         this._fetchRange(range);
       });
     // In template, can directly use in *cdkVirtualFor="let item of dataSource"
@@ -93,11 +96,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   disconnect(): void {
     // Under @if after disconnect get call when destroyed, causing the *cdkVirtualFor to be empty,
     // need to complete the subjects to prevent any further emissions
-    // this.destroy$.next();
-    // this.destroy$.complete();
-    // this.data.complete();
-    // this.loading.complete();
-    // this.totalCount.complete();
+    this._destroy();
   }
 
   refresh(): void {
@@ -116,15 +115,11 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     current[index] = { ...item, [field]: value };
     this.data.next(current);
     this._editedItems.set(priority.id, current[index]);
-    console.log(`Update items`, current[index], current);
   }
   private _reset(): void {
     this.fetched.clear();
     this.data.next([]);
     this.totalCount.next(0);
-
-    // Fetch first page immediately to get totalCount and initial data
-    this._fetchRange({ start: 0, end: PAGE_SIZE });
   }
   /**
    * Empty the data source without resetting the fetched ranges or total count.
@@ -173,37 +168,49 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
       limit: limit,
     };
 
-    this.service.getPriorityListByGroup(this.groupKey, query).subscribe({
-      next: (response) => {
-        const total = response.count;
-        this.totalCount.next(total);
+    this.service
+      .getPriorityListByGroup(this.groupKey, query)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.loading.next(false)),
+      )
+      .subscribe({
+        next: (response) => {
+          const total = response.count;
+          this.totalCount.next(total);
 
-        // Expand the sparse array to match total size
-        const current = this._data;
-        if (current.length < total) {
-          current.length = total;
-        }
-
-        // Place fetched items at the correct offset
-        //const offset = pageIndex * PAGE_SIZE;
-        const offset = query.offset;
-        for (let i = 0; i < response.data.length; i++) {
-          if (this._editedItems.has(response.data[i].id)) {
-            response.data[i] = this._editedItems.get(response.data[i].id)!;
-          } else {
-            current[offset + i] = response.data[i];
+          // Expand the sparse array to match total size
+          let current = this._data;
+          // In this case, we have newer version of the list
+          // The old _data might not valid anymore, so we need to create a new one with the new total size
+          if (current.length < total) {
+            // Rearrange _data as the order might not correct, might have duplicate display with the wrong order,
+            // need to rearrange it to the correct order with the offset and limit
+            // To be simple, just recreate the old array
+            this._data = Array.from({ length: total }, () => null);
+            current = this._data;
           }
-        }
 
-        this.data.next(current);
-        this.loading.next(false);
-      },
-      error: () => {
-        // Allow retry on next scroll
-        //this.fetchedPages.delete(pageIndex);
-        this.loading.next(false);
-      },
-    });
+          // Place fetched items at the correct offset
+          const offset = query.offset;
+          for (let i = 0; i < response.data.length; i++) {
+            if (this._editedItems.has(response.data[i].id)) {
+              response.data[i] = this._editedItems.get(response.data[i].id)!;
+            } else {
+              current[offset + i] = response.data[i];
+            }
+          }
+
+          this.data.next(current);
+        },
+        error: () => {
+          // Allow retry on next scroll
+          console.error(
+            `Failed to fetch data for range ${range.start}-${range.end}, removing from fetched set to allow retry.`,
+          );
+          this.fetched.delete(range);
+        },
+      });
   }
 
   /** Retrieve list of edited items ready send to the backend */
