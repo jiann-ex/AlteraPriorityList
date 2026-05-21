@@ -20,6 +20,8 @@ import {
   signal,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideCheck, lucideX } from '@ng-icons/lucide';
 import { classes } from '@spartan-ng/helm/utils';
 import { Subscription } from 'rxjs';
 
@@ -481,14 +483,13 @@ export class GridTableCellInput
 /** Allow to press enter to toggle boolean values */
 @Component({
   selector: '[gridTableCellCheckbox]',
+  imports: [NgIcon],
   template: `
-    <span>
-      @if (this._value()) {
-        <span class="text-green-500">✓</span>
-      } @else {
-        <span class="text-red-500">✗</span>
-      }
-    </span>
+    @if (this._value()) {
+      <ng-icon class="text-green-500" name="lucideCheck" />
+    } @else {
+      <ng-icon class="text-red-500" name="lucideX" />
+    }
   `,
   providers: [
     {
@@ -497,11 +498,20 @@ export class GridTableCellInput
       multi: true,
     },
   ],
+  viewProviders: [
+    provideIcons({
+      lucideCheck,
+      lucideX,
+    }),
+  ],
+  host: {
+    class: 'flex items-center justify-center',
+    '(keydown)': 'onKeyDown($event)',
+    '(blur)': 'onBlur()',
+    '(click)': 'onClick()',
+  },
 })
-export class GridTableCellCheckbox
-  extends GridTableCell
-  implements ControlValueAccessor, OnInit, OnDestroy
-{
+export class GridTableCellCheckbox extends GridTableCell implements ControlValueAccessor {
   protected readonly _value = signal<boolean>(false);
   private readonly _el = inject(ElementRef);
   private onTouchedFn: () => void = () => {};
@@ -527,16 +537,14 @@ export class GridTableCellCheckbox
     // @TODO: implement disabled state if needed
   }
 
-  ngOnInit(): void {
-    this._el.nativeElement.addEventListener('keydown', this.onKeyDown.bind(this));
-    this._el.nativeElement.addEventListener('blur', this._onBlur.bind(this));
-  }
-  ngOnDestroy(): void {
-    this._el.nativeElement.removeEventListener('keydown', this.onKeyDown.bind(this));
-    this._el.nativeElement.removeEventListener('blur', this._onBlur.bind(this));
+  protected onClick(): void {
+    const newValue = !this._value();
+    this._value.set(newValue);
+    this.onChangeFn(newValue);
+    this._focus();
   }
 
-  private onKeyDown(event: KeyboardEvent): void {
+  protected onKeyDown(event: KeyboardEvent): void {
     if (event.key !== 'Enter') {
       return;
     }
@@ -546,15 +554,18 @@ export class GridTableCellCheckbox
     this._value.set(newValue);
     this.onChangeFn(newValue);
 
+    this._focus();
+  }
+
+  /** Focus back the element after change to prevent losing focus when pressing enter */
+  private _focus() {
+    // Add timeout here as it loses focus when writeValue is called as value changes in the provider,
+    // So we wait for next tick to focus it back after change detection and view update
     setTimeout(() => {
-      // Focus back the element after change to prevent losing focus when pressing enter
-      this._focus();
+      this._el.nativeElement.focus && this._el.nativeElement.focus();
     });
   }
-  private _focus() {
-    this._el.nativeElement.focus && this._el.nativeElement.focus();
-  }
-  private _onBlur(): void {
+  protected onBlur(): void {
     this.onTouchedFn();
   }
 }
@@ -572,6 +583,7 @@ export class GridTableCaption {
   }
 }
 
+// Move some components to individual file for readability?
 export const GridTableImports = [
   GridTable,
   GridTableHeader,
