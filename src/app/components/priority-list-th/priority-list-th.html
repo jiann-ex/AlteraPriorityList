@@ -76,6 +76,7 @@
         [itemSize]="32"
         [minBufferPx]="320"
         [maxBufferPx]="620"
+        (focusout)="$event.stopPropagation()"
       >
         <ng-container *cdkVirtualFor="let option of dataSource">
           @if (option) {
