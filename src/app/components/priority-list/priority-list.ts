@@ -1,4 +1,13 @@
-import { Component, computed, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import {
+  Component,
+  computed,
+  HostListener,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -7,7 +16,7 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 import { PriorityListService } from '../../services/priority-list.service';
 import { GroupedDataSource } from '../../services/grouped-datasource';
 import { FormsModule } from '@angular/forms';
-import { combineLatest, forkJoin, Observable, Subject } from 'rxjs';
+import { combineLatest, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import type { ColumnDef } from '../../types/column-def';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -22,7 +31,6 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCircleChevronDown, lucideCircleChevronRight } from '@ng-icons/lucide';
 import { PriorityListDataSource } from '../../services/priority-list-datasource';
 import { AsyncPipe, NgClass } from '@angular/common';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-priority-list',
@@ -61,6 +69,23 @@ export class PriorityList implements OnInit, OnDestroy {
 
   private readonly service = inject(PriorityListService);
   private readonly destroy$ = new Subject<void>();
+
+  /** Undo stack to track all edits for Ctrl+Z */
+  private readonly undoStack: {
+    dataSource: PriorityListDataSource;
+    index: number;
+    data: Priority;
+    field: keyof Priority;
+    previousValue: unknown;
+  }[] = [];
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent): void {
+    if (event.ctrlKey && event.key === 'z') {
+      event.preventDefault();
+      this.undo();
+    }
+  }
 
   /** @TODO: Remove this later, not in used anymore */
   groupedSource!: GroupedDataSource<Priority>;
@@ -263,12 +288,14 @@ export class PriorityList implements OnInit, OnDestroy {
     value: string,
   ): void {
     if (!data) return;
+    const previousValue = data[field];
     const parsed = parseInt(value);
     if (isNaN(parsed)) {
       dataSource.editItem(index, data, field, null);
     } else {
       dataSource.editItem(index, data, field, parsed);
     }
+    this.undoStack.push({ dataSource, index, data, field, previousValue });
   }
   editBooleanItem(
     dataSource: PriorityListDataSource,
@@ -278,13 +305,16 @@ export class PriorityList implements OnInit, OnDestroy {
     value: boolean,
   ): void {
     if (!data) return;
-    console.log('Boolean input event:', {
-      rowIndex: index,
-      colKey: field,
-      event: value,
-    });
+    const previousValue = data[field];
     const parsed = Boolean(value);
     dataSource.editItem(index, data, field, parsed);
+    this.undoStack.push({ dataSource, index, data, field, previousValue });
+  }
+
+  undo(): void {
+    const entry = this.undoStack.pop();
+    if (!entry) return;
+    entry.dataSource.undoEdit(entry.index, entry.data, entry.field, entry.previousValue);
   }
 
   /** To update the  */

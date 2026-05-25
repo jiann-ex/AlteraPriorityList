@@ -9,6 +9,7 @@ import { HlmSpinner } from '@spartan-ng/helm/spinner';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideAArrowUp } from '@ng-icons/lucide';
 import { ShadowDomOverlayContainer } from './shadow-dom-overlay-container';
+import { HlmToasterImports } from '@spartan-ng/helm/sonner';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +21,7 @@ import { ShadowDomOverlayContainer } from './shadow-dom-overlay-container';
     PriorityList,
     HlmSpinner,
     NgIcon,
+    HlmToasterImports,
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.scss'],

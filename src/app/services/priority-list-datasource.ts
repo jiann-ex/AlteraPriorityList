@@ -5,6 +5,7 @@ import { Priority } from '../types/priority';
 import { PriorityListService, Query } from './priority-list.service';
 import type { PriorityData } from '../types';
 import { computed, signal } from '@angular/core';
+import { toast } from '@spartan-ng/brain/sonner';
 
 /**
  * Scroll debounce time in milliseconds, meaning wait 300ms after user stop scroll
@@ -45,6 +46,8 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
    * when there is match with the id
    */
   private readonly _editedItems = signal<Map<string, PriorityData>>(new Map());
+  /** Original state of items before any edits, used to detect full revert */
+  private readonly _originalItems = new Map<string, PriorityData>();
   readonly editedItems = computed(() => Array.from(this._editedItems().values()));
   readonly totalEdited = computed(() => this._editedItems().size);
 
@@ -119,6 +122,11 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
 
     if (!item) return;
 
+    // Store the original state before the first edit
+    if (!this._originalItems.has(priority.id)) {
+      this._originalItems.set(priority.id, { ...item });
+    }
+
     current[index] = { ...item, [field]: value };
     this.data.next(current);
     this._editedItems.update((prev) => {
@@ -126,6 +134,38 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
       newMap.set(priority.id, current[index]);
       return newMap;
     });
+  }
+
+  /** Revert a single field edit on an item at the given index. */
+  undoEdit(index: number, priority: Priority, field: keyof Priority, previousValue: unknown): void {
+    const current = this._data;
+    const item = current[index];
+    if (!item) return;
+
+    toast('An edit has been undone.', {
+      description: `Field "${field}" reverted to previous value.`,
+      position: 'top-center',
+    });
+
+    current[index] = { ...item, [field]: previousValue };
+    this.data.next(current);
+
+    // Check if the item is back to its original fetched state — if so, remove from edited map
+    const original = this._originalItems.get(priority.id);
+    if (original && JSON.stringify(current[index]) === JSON.stringify(original)) {
+      this._editedItems.update((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(priority.id);
+        return newMap;
+      });
+      this._originalItems.delete(priority.id);
+    } else {
+      this._editedItems.update((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(priority.id, current[index]);
+        return newMap;
+      });
+    }
   }
   private _reset(): void {
     this.fetched.clear();
