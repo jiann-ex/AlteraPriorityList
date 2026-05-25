@@ -48,6 +48,15 @@
         </hlm-dropdown-menu-shortcut>
       </hlm-dropdown-menu-label>
       <button
+        hlmDropdownMenuCheckbox
+        keepOpen
+        [checked]="blank()"
+        (triggered)="blank.set(!blank())"
+      >
+        <hlm-dropdown-menu-checkbox-indicator />
+        <span class="text-nowrap text-ellipsis overflow-hidden">BLANK</span>
+      </button>
+      <button
         hlmDropdownMenuItem
         [variant]="'destructive'"
         [disabled]="selectedOptions().size === 0"
@@ -57,9 +66,17 @@
           <ng-icon class="text-red-500" name="lucideTrash"></ng-icon>
         </hlm-dropdown-menu-shortcut>
       </button>
+      <div hlmDropdownMenuItem keepOpen class="my-1">
+        <input
+          hlmInput
+          placeholder="Search options"
+          [ngModel]="searchTerm()"
+          (input)="onSearchInput($event)"
+        />
+      </div>
       <cdk-virtual-scroll-viewport
         class="h-64"
-        [itemSize]="40"
+        [itemSize]="32"
         [minBufferPx]="320"
         [maxBufferPx]="620"
       >
@@ -67,6 +84,7 @@
           @if (option) {
             <button
               hlmDropdownMenuCheckbox
+              keepOpen
               [checked]="selectedOptions().has(option)"
               (triggered)="toggleOption(option)"
             >
@@ -74,7 +92,7 @@
               <span class="text-nowrap text-ellipsis overflow-hidden">{{ option }}</span>
             </button>
           } @else {
-            <hlm-skeleton class="h-10 w-full" />
+            <hlm-skeleton class="h-8 w-full" />
           }
         </ng-container>
       </cdk-virtual-scroll-viewport>

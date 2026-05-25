@@ -32,7 +32,7 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
     private readonly col: keyof PriorityResponse,
   ) {
     super();
-    this._data = Array.from({ length: 100 }, () => null);
+    this._data = Array.from({ length: 8 }, () => null);
   }
 
   /** Initialize all subjects */
@@ -45,6 +45,14 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
     this.destroy$.next();
     this.destroy$.complete();
     this.data.complete();
+  }
+
+  search(term: string) {
+    // Clear fetched cache to allow refetch with new search term
+    this.fetched.clear();
+    // Clear current data to show loading state in the UI
+    this._data = Array.from({ length: 8 }, () => null);
+    this.data.next(this._data);
   }
 
   override connect(collectionViewer: CollectionViewer): Observable<readonly NullableString[]> {
@@ -88,7 +96,6 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
     const limit = range.end - range.start;
 
     if (this._isRangeFetched(range)) {
-      console.log(`Range ${range.start}-${range.end} already fetched, skip API call.`);
       return;
     }
     this._fetchPage(offset, limit, range);
@@ -114,7 +121,6 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
       )
       .subscribe({
         next: (response) => {
-          console.log(`Fetched options for range ${range.start}-${range.end}:`, response);
           const total = response.count;
           //this.totalCount.next(total);
 

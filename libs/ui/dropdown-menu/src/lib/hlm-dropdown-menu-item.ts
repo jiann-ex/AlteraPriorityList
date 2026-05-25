@@ -22,6 +22,7 @@ import { classes } from '@spartan-ng/helm/utils';
 })
 export class HlmDropdownMenuItem {
   protected readonly _isButton = inject(HOST_TAG_NAME) === 'button';
+  private readonly _cdkMenuItem = inject(CdkMenuItem, { self: true });
 
   public readonly disabled = input<boolean, BooleanInput>(false, { transform: booleanAttribute });
 
@@ -31,10 +32,20 @@ export class HlmDropdownMenuItem {
     transform: booleanAttribute,
   });
 
+  /** When true, the dropdown menu will not close when this item is triggered. */
+  public readonly keepOpen = input<boolean, BooleanInput>(false, {
+    transform: booleanAttribute,
+  });
+
   constructor() {
     classes(
       () =>
         "hover:bg-accent focus-visible:bg-accent focus:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:*:[ng-icon]:!text-destructive [&_ng-icon:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 [&_ng-icon]:pointer-events-none [&_ng-icon]:shrink-0 [&_svg:not([class*='text-'])]:text-base",
     );
+
+    const originalTrigger = this._cdkMenuItem.trigger.bind(this._cdkMenuItem);
+    this._cdkMenuItem.trigger = (options?: { keepOpen: boolean }) => {
+      originalTrigger({ keepOpen: this.keepOpen() || options?.keepOpen || false });
+    };
   }
 }

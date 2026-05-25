@@ -86,8 +86,9 @@ export class PriorityListService {
     });
     return of(
       data.map((group) => {
-        const dataSource = new PriorityListDataSource(this, group.r1, group.total);
-        return new PriorityGroup(group.r1, group.total, dataSource);
+        const total = group.total || 1; // Avoid total being 0 to prevent issues in cdk viewport
+        const dataSource = new PriorityListDataSource(this, group.r1, total);
+        return new PriorityGroup(group.r1, total, dataSource);
       }),
     ).pipe(delay(200)); // Simulate 200ms network delay
     // --- END MOCK ---
@@ -154,22 +155,21 @@ export class PriorityListService {
     prop: keyof PriorityResponse,
     query: Query,
   ): Observable<PagedList<string>> {
-    console.log(`Fetching filter options for ${prop} with query:`, query);
     // --- MOCK: return unique values for the requested property from the mock data ---
     const offset = query.offset;
     const limit = query.limit;
-    const options = Array.from(
-      new Set(
-        MOCK_DATA.slice(offset, offset + limit).map((item) => item[prop as keyof PriorityResponse]),
-      ),
-    )
-      .filter((option) => option !== null && option !== undefined)
+    const mappedData = MOCK_DATA.map((item) => item[prop as keyof PriorityResponse])
+      .filter((value): value is string | number => value !== null && value !== undefined)
+      .filter((value, index, array) => array.indexOf(value) === index)
       .map((option) => String(option));
-    console.log(`Unique options for ${prop}:`, options);
-    options.sort((a, b) => a.localeCompare(b));
+    mappedData.sort((a, b) => a.localeCompare(b));
+    const options = Array.from(new Set(mappedData.slice(offset, offset + limit))).filter(
+      (option) => option !== null && option !== undefined,
+    );
+
     return of<PagedList<string>>({
       data: options,
-      count: options.length,
+      count: mappedData.length,
       page: -1,
       pageSize: query.limit,
     }).pipe(delay(100)); // Simulate 100ms network delay

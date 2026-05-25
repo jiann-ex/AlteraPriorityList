@@ -15,13 +15,16 @@ import {
 import { ColumnDef } from '../../types/column-def';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideFilterX, lucideSortAsc, lucideSortDesc, lucideTrash } from '@ng-icons/lucide';
-import { NullableString, PriorityResponse, priorityToMaps, SortDirection } from '@app-types';
+import { NullableString, priorityToMaps, SortDirection } from '@app-types';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmDropdownMenuImports, HlmDropdownMenuTrigger } from '@spartan-ng/helm/dropdown-menu';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { PriorityFilterOptionsDataSource } from '../../services/priority-filter-options-datasource';
 import { PriorityListService } from '../../services/priority-list.service';
 import { CdkFixedSizeVirtualScroll, ScrollingModule } from '@angular/cdk/scrolling';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 
 // Custom virtual scroll settings
 const OPTION_HEIGHT = 32; // px per item
@@ -37,6 +40,8 @@ const BUFFER = 3; // extra items above/below
     HlmSkeletonImports,
     CdkFixedSizeVirtualScroll,
     ScrollingModule,
+    HlmInputImports,
+    FormsModule,
   ],
   templateUrl: './priority-list-th.html',
   viewProviders: [
@@ -72,6 +77,8 @@ export class PriorityListTh implements OnInit {
   sortDirection = input.required<SortDirection>();
   widths = input<Record<string, number>>({});
   widthChange = output<number>();
+  searchTerm = signal<string | null>(null);
+  blank = signal(false);
 
   private readonly _dropdownMenuHost: HlmDropdownMenuTrigger = inject(HlmDropdownMenuTrigger, {
     host: true,
@@ -86,7 +93,7 @@ export class PriorityListTh implements OnInit {
 
   ngOnInit(): void {
     this._dropdownMenuHost.setMenuTemplate(this._menu());
-    this._dropdownMenuHost.opened.pipe().subscribe(() => {
+    this._dropdownMenuHost.opened.pipe(takeUntilDestroyed(this._destroyRef)).subscribe(() => {
       this.scrollTop.set(0);
     });
 
@@ -168,5 +175,21 @@ export class PriorityListTh implements OnInit {
     document.addEventListener('mouseup', onMouseUp);
 
     this._destroyRef.onDestroy(() => onMouseUp());
+  }
+
+  private _searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  onSearchInput(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.target as HTMLInputElement;
+    this.searchTerm.set(target.value);
+    // Debounce the search input to avoid too many requests
+    if (this._searchTimeout) {
+      clearTimeout(this._searchTimeout);
+    }
+    this._searchTimeout = setTimeout(() => {
+      this.dataSource.search(target.value);
+    }, 300);
   }
 }
