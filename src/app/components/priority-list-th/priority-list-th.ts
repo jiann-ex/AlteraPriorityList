@@ -20,11 +20,16 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmDropdownMenuImports, HlmDropdownMenuTrigger } from '@spartan-ng/helm/dropdown-menu';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
-import { PriorityFilterOptionsDataSource } from '../../services/priority-filter-options-datasource';
+import {
+  INIT_OPTION_SIZE,
+  PriorityFilterOptionsDataSource,
+} from '../../services/priority-filter-options-datasource';
 import { PriorityListService } from '../../services/priority-list.service';
 import { CdkFixedSizeVirtualScroll, ScrollingModule } from '@angular/cdk/scrolling';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { AsyncPipe } from '@angular/common';
+import { HlmEmptyImports } from '@spartan-ng/helm/empty';
 
 // Custom virtual scroll settings
 const OPTION_HEIGHT = 32; // px per item
@@ -42,6 +47,8 @@ const BUFFER = 3; // extra items above/below
     ScrollingModule,
     HlmInputImports,
     FormsModule,
+    AsyncPipe,
+    HlmEmptyImports,
   ],
   templateUrl: './priority-list-th.html',
   viewProviders: [
@@ -88,6 +95,8 @@ export class PriorityListTh implements OnInit {
 
   private readonly priorityListService = inject(PriorityListService);
   protected dataSource!: PriorityFilterOptionsDataSource;
+  private readonly _totalItemCount = signal(INIT_OPTION_SIZE);
+  protected readonly viewportHeight = computed(() => Math.min(256, this._totalItemCount() * 32));
 
   constructor() {}
 
@@ -101,6 +110,9 @@ export class PriorityListTh implements OnInit {
       this.priorityListService,
       priorityToMaps.get(this.column().key)!,
     );
+    this.dataSource.totalCount$
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe((count) => this._totalItemCount.set(count));
   }
 
   protected options = signal<NullableString[]>(

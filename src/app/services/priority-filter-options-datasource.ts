@@ -17,11 +17,16 @@ import { PriorityResponse } from '@app-types/priority';
  * Prevent trigger unintended request when user scrolling fast
  */
 const SCROLL_DEBOUNCE_TIME = 300;
+export const INIT_OPTION_SIZE = 8;
 
 export class PriorityFilterOptionsDataSource extends DataSource<NullableString> {
   private _data: NullableString[] = [];
   private data!: BehaviorSubject<NullableString[]>;
   private readonly loading = new BehaviorSubject<boolean>(false);
+  private readonly isEmpty = new BehaviorSubject<boolean>(false);
+  readonly isEmpty$ = this.isEmpty.asObservable();
+  private readonly totalCount = new BehaviorSubject<number>(INIT_OPTION_SIZE);
+  readonly totalCount$ = this.totalCount.asObservable();
   private destroy$ = new Subject<void>();
 
   /** Stored set of fetched list range to prevent refetch same thing again */
@@ -35,7 +40,7 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
     private readonly col: keyof PriorityResponse,
   ) {
     super();
-    this._data = Array.from({ length: 8 }, () => null);
+    this._data = Array.from({ length: INIT_OPTION_SIZE }, () => null);
   }
 
   /** Initialize all subjects */
@@ -54,7 +59,7 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
     // Clear fetched cache to allow refetch with new search term
     this.fetched.clear();
     // Clear current data to show loading state in the UI
-    this._data = Array.from({ length: 8 }, () => null);
+    this._data = Array.from({ length: INIT_OPTION_SIZE }, () => null);
     this.data.next(this._data);
 
     this._term = term;
@@ -127,8 +132,6 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
       .subscribe({
         next: (response) => {
           const total = response.count;
-          //this.totalCount.next(total);
-
           // Expand the sparse array to match total size
           let current = this._data;
           // In this case, we have newer version of the list
@@ -147,6 +150,8 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
             current[offset + i] = response.data[i];
           }
 
+          this.totalCount.next(total);
+          this.isEmpty.next(current.filter((item): item is string => item !== null).length === 0);
           this.data.next(current);
         },
         error: () => {

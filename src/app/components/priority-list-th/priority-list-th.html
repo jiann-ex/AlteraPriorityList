@@ -58,7 +58,7 @@
           <ng-icon class="text-red-500" name="lucideTrash"></ng-icon>
         </hlm-dropdown-menu-shortcut>
       </button>
-      <div hlmDropdownMenuItem keepOpen class="my-1">
+      <div class="my-1">
         <input
           hlmInput
           placeholder="Search options"
@@ -71,8 +71,11 @@
         <hlm-dropdown-menu-checkbox-indicator />
         <span class="text-nowrap text-ellipsis overflow-hidden">BLANK</span>
       </button>
+      @if (dataSource.isEmpty$ | async) {
+        <div class="p-4 text-center text-sm text-muted-foreground">No options found</div>
+      }
       <cdk-virtual-scroll-viewport
-        class="h-64"
+        [style.height.px]="viewportHeight()"
         [itemSize]="32"
         [minBufferPx]="320"
         [maxBufferPx]="620"
@@ -90,7 +93,9 @@
               <span class="text-nowrap text-ellipsis overflow-hidden">{{ option }}</span>
             </button>
           } @else {
-            <hlm-skeleton class="h-8 w-full" />
+            <div class="h-8 px-2">
+              <hlm-skeleton class="h-6 w-full" />
+            </div>
           }
         </ng-container>
       </cdk-virtual-scroll-viewport>
