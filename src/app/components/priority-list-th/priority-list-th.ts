@@ -103,7 +103,7 @@ export class PriorityListTh implements OnInit {
   ngOnInit(): void {
     this._dropdownMenuHost.setMenuTemplate(this._menu());
     this._dropdownMenuHost.opened.pipe(takeUntilDestroyed(this._destroyRef)).subscribe(() => {
-      this.scrollTop.set(0);
+      //this.scrollTop.set(0);
     });
 
     this.dataSource = new PriorityFilterOptionsDataSource(
@@ -121,29 +121,6 @@ export class PriorityListTh implements OnInit {
     ),
   );
   protected selectedOptions = signal<Set<string>>(new Set());
-
-  // --- Lightweight virtual scroll for options, as we cant use multiple cdk virtual scroll viewport within a viewport ---
-  protected readonly optionHeight = OPTION_HEIGHT;
-  protected scrollTop = signal(0);
-
-  protected readonly totalHeight = computed(() => this.options().length * OPTION_HEIGHT);
-  protected readonly visibleOptions = computed(() => {
-    const top = this.scrollTop();
-    const startIdx = Math.max(0, Math.floor(top / OPTION_HEIGHT) - BUFFER);
-    const endIdx = Math.min(this.options().length, startIdx + VISIBLE_COUNT + BUFFER * 2);
-    return this.options()
-      .slice(startIdx, endIdx)
-      .map((option, i) => ({
-        option,
-        index: startIdx + i,
-        offsetTop: (startIdx + i) * OPTION_HEIGHT,
-      }));
-  });
-
-  onOptionsScroll(event: Event): void {
-    const target = event.target as HTMLElement;
-    this.scrollTop.set(target.scrollTop);
-  }
 
   protected toggleOption(option: string): void {
     const selected = this.selectedOptions();
