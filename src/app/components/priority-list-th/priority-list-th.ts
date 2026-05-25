@@ -179,17 +179,21 @@ export class PriorityListTh implements OnInit {
 
   private _searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  onSearchInput(event: Event): void {
-    event.preventDefault();
-    event.stopPropagation();
-    const target = event.target as HTMLInputElement;
-    this.searchTerm.set(target.value);
+  onSearchInput(value: string): void {
+    this.searchTerm.set(value);
     // Debounce the search input to avoid too many requests
     if (this._searchTimeout) {
       clearTimeout(this._searchTimeout);
     }
     this._searchTimeout = setTimeout(() => {
-      this.dataSource.search(target.value);
+      this.dataSource.search(value);
     }, 300);
+  }
+
+  toggleBlank(): void {
+    this.blank.update((v) => !v);
+  }
+  clearSelect(): void {
+    this.selectedOptions.set(new Set());
   }
 }

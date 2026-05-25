@@ -154,14 +154,20 @@ export class PriorityListService {
   getPriorityFilterOptions(
     prop: keyof PriorityResponse,
     query: Query,
+    term: string | null,
   ): Observable<PagedList<string>> {
     // --- MOCK: return unique values for the requested property from the mock data ---
     const offset = query.offset;
     const limit = query.limit;
-    const mappedData = MOCK_DATA.map((item) => item[prop as keyof PriorityResponse])
+    let mappedData = MOCK_DATA.map((item) => item[prop as keyof PriorityResponse])
       .filter((value): value is string | number => value !== null && value !== undefined)
       .filter((value, index, array) => array.indexOf(value) === index)
       .map((option) => String(option));
+    if (term) {
+      const lowerTerm = term.toLowerCase();
+      mappedData = mappedData.filter((option) => option.toLowerCase().includes(lowerTerm));
+    }
+
     mappedData.sort((a, b) => a.localeCompare(b));
     const options = Array.from(new Set(mappedData.slice(offset, offset + limit))).filter(
       (option) => option !== null && option !== undefined,

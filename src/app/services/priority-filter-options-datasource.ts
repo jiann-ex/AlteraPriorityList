@@ -10,7 +10,7 @@ import {
   takeUntil,
 } from 'rxjs';
 import { PriorityListService, Query } from './priority-list.service';
-import { Priority, PriorityResponse } from '@app-types/priority';
+import { PriorityResponse } from '@app-types/priority';
 
 /**
  * Scroll debounce time in milliseconds, meaning wait 300ms after user stop scroll
@@ -26,6 +26,9 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
 
   /** Stored set of fetched list range to prevent refetch same thing again */
   private fetched = new Set<ListRange>();
+
+  /** Search term */
+  private _term: string | null = null;
 
   constructor(
     private readonly service: PriorityListService,
@@ -47,12 +50,14 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
     this.data.complete();
   }
 
-  search(term: string) {
+  search(term: string | null): void {
     // Clear fetched cache to allow refetch with new search term
     this.fetched.clear();
     // Clear current data to show loading state in the UI
     this._data = Array.from({ length: 8 }, () => null);
     this.data.next(this._data);
+
+    this._term = term;
   }
 
   override connect(collectionViewer: CollectionViewer): Observable<readonly NullableString[]> {
@@ -114,7 +119,7 @@ export class PriorityFilterOptionsDataSource extends DataSource<NullableString> 
     };
 
     this.service
-      .getPriorityFilterOptions(this.col, query)
+      .getPriorityFilterOptions(this.col, query, this._term)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => this.loading.next(false)),
