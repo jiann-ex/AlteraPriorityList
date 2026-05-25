@@ -137,7 +137,6 @@ export class PriorityList implements OnInit, OnDestroy {
         combineLatest(this.priorityGrouped().map((group) => group.dataSource.totalCount$))
           .pipe(takeUntil(this.destroy$))
           .subscribe((counts) => {
-            console.log('Total counts from all groups:', counts);
             const total = counts.reduce((sum, count) => sum + count, 0);
             this.totalCount.set(total);
             // Update each group's total count in priorityGrouped signal
@@ -207,7 +206,7 @@ export class PriorityList implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.groupedSource?.disconnect();
-    this.priorityGrouped().forEach((group) => group.dataSource.disconnect());
+    //this.priorityGrouped().forEach((group) => group.dataSource.disconnect());
   }
 
   onGroupToggle(key: string): void {
@@ -286,5 +285,17 @@ export class PriorityList implements OnInit, OnDestroy {
     });
     const parsed = Boolean(value);
     dataSource.editItem(index, data, field, parsed);
+  }
+
+  /** To update the  */
+  onGridScroll(event: Event): void {
+    const el = event.target as HTMLElement;
+    const scrollLeft = el.scrollLeft;
+    const wrappers = el.querySelectorAll<HTMLElement>(
+      ':scope > cdk-virtual-scroll-viewport .cdk-virtual-scroll-content-wrapper',
+    );
+    wrappers.forEach((wrapper) => {
+      wrapper.style.left = `${-scrollLeft}px`;
+    });
   }
 }

@@ -1,3 +1,19 @@
+:host {
+  container-type: inline-size;
+}
+
+// Keep the vertical scrollbar always visible on the right side
+// by making the viewport sticky within the horizontal scroll container
+// This will make the horizontal scroll not working with the grid table
+// We just some javscript trick in the priority-list.ts to sync the horizontal scroll of the grid table and the viewport
+cdk-virtual-scroll-viewport.priority-group {
+  position: sticky !important;
+  left: 0;
+  width: 100cqi !important;
+  max-width: 100cqi !important;
+  min-width: 0 !important;
+}
+
 .editable-cell {
   cursor: text;
   outline: none;

@@ -95,9 +95,9 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
       .subscribe((range) => {
         this._fetchRange(range);
       });
-    // In template, can directly use in *cdkVirtualFor="let item of dataSource"
-    console.log('DataSource connected for R1:', this.groupKey, this.data.value);
+
     this.data.next(this._data);
+    // In template, can directly use in *cdkVirtualFor="let item of dataSource"
     return this.data.asObservable();
   }
 
