@@ -154,6 +154,7 @@ export class PriorityListService {
     prop: keyof PriorityResponse,
     query: Query,
   ): Observable<PagedList<string>> {
+    console.log(`Fetching filter options for ${prop} with query:`, query);
     // --- MOCK: return unique values for the requested property from the mock data ---
     const offset = query.offset;
     const limit = query.limit;
@@ -164,6 +165,7 @@ export class PriorityListService {
     )
       .filter((option) => option !== null && option !== undefined)
       .map((option) => String(option));
+    console.log(`Unique options for ${prop}:`, options);
     options.sort((a, b) => a.localeCompare(b));
     return of<PagedList<string>>({
       data: options,

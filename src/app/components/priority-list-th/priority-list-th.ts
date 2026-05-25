@@ -15,10 +15,13 @@ import {
 import { ColumnDef } from '../../types/column-def';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideFilterX, lucideSortAsc, lucideSortDesc, lucideTrash } from '@ng-icons/lucide';
-import { NullableString, SortDirection } from '@app-types';
+import { NullableString, PriorityResponse, priorityToMaps, SortDirection } from '@app-types';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmDropdownMenuImports, HlmDropdownMenuTrigger } from '@spartan-ng/helm/dropdown-menu';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
+import { PriorityFilterOptionsDataSource } from '../../services/priority-filter-options-datasource';
+import { PriorityListService } from '../../services/priority-list.service';
+import { CdkFixedSizeVirtualScroll, ScrollingModule } from '@angular/cdk/scrolling';
 
 // Custom virtual scroll settings
 const OPTION_HEIGHT = 32; // px per item
@@ -27,7 +30,14 @@ const BUFFER = 3; // extra items above/below
 
 @Component({
   selector: '[appPriorityListTh], [appPriorityListCol]',
-  imports: [NgIcon, HlmButtonImports, HlmDropdownMenuImports, HlmSkeletonImports],
+  imports: [
+    NgIcon,
+    HlmButtonImports,
+    HlmDropdownMenuImports,
+    HlmSkeletonImports,
+    CdkFixedSizeVirtualScroll,
+    ScrollingModule,
+  ],
   templateUrl: './priority-list-th.html',
   viewProviders: [
     provideIcons({
@@ -69,6 +79,9 @@ export class PriorityListTh implements OnInit {
   private readonly _el = inject(ElementRef<HTMLElement>);
   private readonly _destroyRef = inject(DestroyRef);
 
+  private readonly priorityListService = inject(PriorityListService);
+  protected dataSource!: PriorityFilterOptionsDataSource;
+
   constructor() {}
 
   ngOnInit(): void {
@@ -76,6 +89,11 @@ export class PriorityListTh implements OnInit {
     this._dropdownMenuHost.opened.pipe().subscribe(() => {
       this.scrollTop.set(0);
     });
+
+    this.dataSource = new PriorityFilterOptionsDataSource(
+      this.priorityListService,
+      priorityToMaps.get(this.column().key)!,
+    );
   }
 
   protected options = signal<NullableString[]>(

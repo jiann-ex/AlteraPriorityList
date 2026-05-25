@@ -5,7 +5,6 @@ import { Priority } from '../types/priority';
 import { PriorityListService, Query } from './priority-list.service';
 import type { PriorityData } from '../types';
 import { computed, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 /**
  * Scroll debounce time in milliseconds, meaning wait 300ms after user stop scroll

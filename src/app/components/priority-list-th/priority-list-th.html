@@ -57,8 +57,29 @@
           <ng-icon class="text-red-500" name="lucideTrash"></ng-icon>
         </hlm-dropdown-menu-shortcut>
       </button>
+      <cdk-virtual-scroll-viewport
+        class="h-64"
+        [itemSize]="40"
+        [minBufferPx]="320"
+        [maxBufferPx]="620"
+      >
+        <ng-container *cdkVirtualFor="let option of dataSource">
+          @if (option) {
+            <button
+              hlmDropdownMenuCheckbox
+              [checked]="selectedOptions().has(option)"
+              (triggered)="toggleOption(option)"
+            >
+              <hlm-dropdown-menu-checkbox-indicator />
+              <span class="text-nowrap text-ellipsis overflow-hidden">{{ option }}</span>
+            </button>
+          } @else {
+            <hlm-skeleton class="h-10 w-full" />
+          }
+        </ng-container>
+      </cdk-virtual-scroll-viewport>
       <!-- Lightweight virtual scroll (no nested cdk-virtual-scroll-viewport) -->
-      <div
+      <!-- <div
         class="relative overflow-y-auto"
         style="height: 256px"
         (scroll)="onOptionsScroll($event)"
@@ -87,7 +108,7 @@
             </div>
           }
         </div>
-      </div>
+      </div> -->
     </hlm-dropdown-menu-group>
   </hlm-dropdown-menu>
 </ng-template>
