@@ -225,7 +225,10 @@ export class PriorityListTh implements OnInit {
     });
   }
 
-  clearFilter(): void {
+  clearFilter(event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
     this.blank.set(false);
     this.searchTerm.set(null);
     this.selectedOptions.set(new Set());

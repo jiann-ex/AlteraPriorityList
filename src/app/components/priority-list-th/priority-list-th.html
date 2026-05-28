@@ -2,7 +2,7 @@
   <div [ariaLabel]="column().label" class="flex-1 text-nowrap text-ellipsis overflow-hidden">
     {{ column().label }}
   </div>
-  <div class="flex-none">
+  <div class="flex-none flex items-center gap-2">
     <button
       class="cursor-pointer"
       [ngClass]="{
@@ -23,8 +23,14 @@
         "
       ></ng-icon>
     </button>
-    @if (selectedOptions().size > 0) {
-      <button class="cursor-pointer" hlmBtn variant="destructive" size="icon-xs">
+    @if (blank() || selectedOptions().size > 0) {
+      <button
+        class="cursor-pointer"
+        hlmBtn
+        variant="destructive"
+        size="icon-xs"
+        (click)="clearFilter($event)"
+      >
         <ng-icon name="lucideFilterX"></ng-icon>
       </button>
     }

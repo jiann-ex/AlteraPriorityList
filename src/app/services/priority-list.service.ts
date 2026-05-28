@@ -50,6 +50,7 @@ const MOCK_DATA: PriorityResponse[] = Array.from({ length: TOTAL_MOCK_SIZE }, (_
 
 export interface Filter {
   key: string;
+  includeBlank: boolean;
   /** Priority term instead of values if term is provided */
   term: string | null;
   values: string[];
@@ -115,8 +116,23 @@ export class PriorityListService {
       .filter((item) => {
         if (!query.filters) return true;
         return query.filters.every((filter) => {
+          let blankFlag = true;
+
+          if (filter.includeBlank && filter.includeBlank === true) {
+            const value = item[filter.key as keyof PriorityResponse];
+            if (value === null || value === undefined) {
+              blankFlag = true;
+            } else {
+              blankFlag = false;
+            }
+          }
+
+          if (filter.term) {
+            const value = item[filter.key as keyof PriorityResponse];
+            return blankFlag || String(value).toLowerCase().includes(filter.term.toLowerCase());
+          }
           const value = item[filter.key as keyof PriorityResponse];
-          return filter.values.includes(String(value));
+          return blankFlag || filter.values.includes(String(value));
         });
       })
       .sort((a, b) => {

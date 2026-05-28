@@ -228,6 +228,7 @@ export class PriorityList implements OnInit, OnDestroy {
         key,
         term: e.searchTerm,
         values: e.selected,
+        includeBlank: e.includeBlank,
       };
       this.filters.update((prev) => {
         const others = prev.filter((f) => f.key !== key);
