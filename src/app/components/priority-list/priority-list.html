@@ -11,6 +11,24 @@
     <span class="text-sm text-muted-foreground">Total {{ totalCount() }} rows</span>
     @if (totalEdited() > 0) {
       <span class="text-sm text-yellow-500">You have {{ totalEdited() }} unsaved changes</span>
+      <hlm-dialog>
+        <button hlmBtn hlmDialogTrigger variant="outline">See Changes</button>
+        <hlm-dialog-content *hlmDialogPortal="let ctx">
+          <hlm-dialog-header>
+            <h3 hlmDialogTitle>Edited priority</h3>
+            <p hlmDialogDescription>
+              Make changes to your edited priorities here. Click save when you're done.
+            </p>
+          </hlm-dialog-header>
+          <div class="">
+            <p>Content Here</p>
+          </div>
+          <hlm-dialog-footer>
+            <button hlmBtn variant="outline" hlmDialogClose>Cancel</button>
+            <button hlmBtn type="submit">Save changes</button>
+          </hlm-dialog-footer>
+        </hlm-dialog-content>
+      </hlm-dialog>
       <button hlmBtn>Save Changes</button>
     }
   </div>
@@ -34,8 +52,6 @@
           cdkDrag
           gridTableHead
           appPriorityListTh
-          hlmTooltip
-          [hlmTooltip]="col.label"
           [column]="col"
           [widths]="columnWidths()"
           (widthChange)="onColumnResize(col.key, $event)"

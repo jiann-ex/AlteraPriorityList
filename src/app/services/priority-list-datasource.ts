@@ -169,6 +169,8 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     // Clear current data to prevent mismatch between the data and the sort state, user will see empty list with new sort applied, then the data will be filled in when the new request returns
     this._initData();
     // Trigger data update to refresh the view, if not trigger, the view will still show the old data until user scrolls to trigger the fetch with new sort, which might cause confusion
+    // NOTE: 8 is just an magic number ti matches the height when display items in the cdk virtual scroll
+    // To meke the placeholders loading look nice
     this.data.next(Array.from({ length: 8 }, () => null));
   }
   /**
@@ -263,12 +265,17 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
           const offset = query.offset;
           for (let i = 0; i < response.data.length; i++) {
             if (this._editedItems().has(response.data[i].id)) {
-              response.data[i] = this._editedItems().get(response.data[i].id)!;
+              current[offset + i] = this._editedItems().get(response.data[i].id)!;
             } else {
+              if (!response.data[i]) {
+                console.warn(
+                  `Received null or undefined item from API for id ${response.data[i]?.id}, skipping this item.`,
+                );
+              }
               current[offset + i] = response.data[i];
             }
           }
-
+          console.log('Current', current);
           this.data.next(current);
         },
         error: () => {

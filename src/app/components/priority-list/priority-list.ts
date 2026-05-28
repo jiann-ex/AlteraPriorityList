@@ -6,7 +6,6 @@ import {
   OnDestroy,
   OnInit,
   signal,
-  ViewChild,
 } from '@angular/core';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
@@ -14,7 +13,6 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { Priority, PriorityGroup } from '../../types/priority';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { Filter, PriorityListService } from '../../services/priority-list.service';
-import { GroupedDataSource } from '../../services/grouped-datasource';
 import { FormsModule } from '@angular/forms';
 import { combineLatest, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -32,6 +30,7 @@ import { lucideCircleChevronDown, lucideCircleChevronRight } from '@ng-icons/luc
 import { PriorityListDataSource } from '../../services/priority-list-datasource';
 import { AsyncPipe, NgClass } from '@angular/common';
 import { columns } from './priority-list-columns';
+import { HlmDialogImports } from '@spartan-ng/helm/dialog';
 
 @Component({
   selector: 'app-priority-list',
@@ -51,6 +50,7 @@ import { columns } from './priority-list-columns';
     NgIcon,
     NgClass,
     AsyncPipe,
+    HlmDialogImports,
   ],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',
