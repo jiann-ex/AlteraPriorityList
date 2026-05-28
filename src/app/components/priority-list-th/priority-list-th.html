@@ -4,13 +4,24 @@
   </div>
   <div class="flex-none">
     <button
-      class="cursor-pointer hidden group-hover:flex"
+      class="cursor-pointer"
+      [ngClass]="{
+        'hidden group-hover:flex': sortColumn() !== column().key,
+      }"
       hlmBtn
       variant="outline"
       size="icon-xs"
       (click)="toggleSort($event)"
     >
-      <ng-icon name="lucideSortAsc"></ng-icon>
+      <ng-icon
+        [name]="
+          !sortDirection()
+            ? 'lucideSortAsc'
+            : sortDirection() === 'asc'
+              ? 'lucideSortAsc'
+              : 'lucideSortDesc'
+        "
+      ></ng-icon>
     </button>
     @if (selectedOptions().size > 0) {
       <button class="cursor-pointer" hlmBtn variant="destructive" size="icon-xs">
@@ -29,15 +40,15 @@
     <!---Sort Options -->
     <hlm-dropdown-menu-label>Sort</hlm-dropdown-menu-label>
     <hlm-dropdown-menu-group>
-      <button hlmDropdownMenuItem>
+      <button hlmDropdownMenuItem (click)="manualSort('asc')">
         <ng-icon name="lucideSortAsc"></ng-icon>
         <span>Ascending</span>
       </button>
-      <button hlmDropdownMenuItem>
+      <button hlmDropdownMenuItem (click)="manualSort('desc')">
         <ng-icon name="lucideSortDesc"></ng-icon>
         <span>Descending</span>
       </button>
-      <button hlmDropdownMenuItem variant="destructive">
+      <button hlmDropdownMenuItem variant="destructive" (click)="manualSort(null)">
         <ng-icon name="lucideX"></ng-icon>
         <span>Clear Sort</span>
       </button>

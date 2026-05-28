@@ -31,6 +31,7 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCircleChevronDown, lucideCircleChevronRight } from '@ng-icons/lucide';
 import { PriorityListDataSource } from '../../services/priority-list-datasource';
 import { AsyncPipe, NgClass } from '@angular/common';
+import { columns } from './priority-list-columns';
 
 @Component({
   selector: 'app-priority-list',
@@ -64,9 +65,6 @@ import { AsyncPipe, NgClass } from '@angular/common';
   ],
 })
 export class PriorityList implements OnInit, OnDestroy {
-  /** @TODO: Remove this later, not in used anymore */
-  @ViewChild('tableViewport') viewport?: CdkVirtualScrollViewport;
-
   private readonly service = inject(PriorityListService);
   private readonly destroy$ = new Subject<void>();
 
@@ -87,8 +85,6 @@ export class PriorityList implements OnInit, OnDestroy {
     }
   }
 
-  /** @TODO: Remove this later, not in used anymore */
-  groupedSource!: GroupedDataSource<Priority>;
   isLoading = signal(false);
   totalCount = signal(0);
   priorityGrouped = signal<PriorityGroup[]>([]);
@@ -108,36 +104,7 @@ export class PriorityList implements OnInit, OnDestroy {
 
   filters: Record<string, string> = {};
 
-  protected readonly columns = signal<ColumnDef[]>([
-    { key: 'priority', label: 'Priority' },
-    { key: 'r1', label: 'R1' },
-    { key: 'r2', label: 'R2' },
-    { key: 'equipment', label: 'Equipment' },
-    { key: 'vpo', label: 'VPO' },
-    { key: 'vpoForecastQuantity', label: 'Forecast Qty', class: 'text-right' },
-    { key: 'testTimePerUnit', label: 'Test Time', class: 'text-right' },
-    { key: 'locationCode', label: 'Location' },
-    { key: 'vpoSource', label: 'VPO Source' },
-    { key: 'vpoDescription', label: 'VPO Description' },
-    { key: 'stepSequence', label: 'Step Sequence' },
-    { key: 'step', label: 'Step' },
-    { key: 'engineerName', label: 'Engineer Name' },
-    { key: 'stepComment', label: 'Step Comment' },
-    { key: 'product', label: 'Product' },
-    { key: 'partType', label: 'Part Type' },
-    { key: 'stepState', label: 'Step State' },
-    { key: 'engId', label: 'Eng ID' },
-    { key: 'vpoType', label: 'VPO Type' },
-    { key: 'stepType', label: 'Step Type' },
-    { key: 'activityType', label: 'Activity Type' },
-    { key: 'stepSpecialInstruction', label: 'Special Instruction' },
-    { key: 'stepTimeDuration', label: 'Step Duration' },
-    { key: 'recipe', label: 'Recipe' },
-    { key: 'lastChangesBy', label: 'Last Changes By' },
-    { key: 'hri', label: 'HRI' },
-    { key: 'mrv', label: 'MRV' },
-    { key: 'qdf', label: 'QDF' },
-  ]);
+  protected readonly columns = signal<ColumnDef[]>(columns);
 
   columnWidths = signal<Record<string, number>>(
     createColumnWidths(this.columns().map((c) => c.key)),
@@ -174,25 +141,6 @@ export class PriorityList implements OnInit, OnDestroy {
             }
           });
       });
-
-    this.groupedSource = new GroupedDataSource<Priority>(
-      {
-        groupBy: (item) => String(item.r1),
-        labelFn: (key, count) => `R1: ${key} (${count})`,
-      },
-      (page, pageSize) => {
-        return this.service.getPriorityList({
-          page,
-          pageSize,
-          sort: this.sortColumn() ?? undefined,
-          sortDirection: (this.sortDirection() as 'asc' | 'desc') ?? undefined,
-        });
-      },
-    );
-
-    this.groupedSource.loading
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((loading) => this.isLoading.set(loading));
   }
   toggleExpand(group: PriorityGroup, viewport: CdkVirtualScrollViewport): void {
     // const key = String(r1);
@@ -230,12 +178,7 @@ export class PriorityList implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    this.groupedSource?.disconnect();
     //this.priorityGrouped().forEach((group) => group.dataSource.disconnect());
-  }
-
-  onGroupToggle(key: string): void {
-    this.groupedSource.toggleGroup(key);
   }
 
   dropColumn(event: CdkDragDrop<ColumnDef[]>) {
@@ -248,26 +191,45 @@ export class PriorityList implements OnInit, OnDestroy {
     console.log('Grid active');
   }
 
-  onSort(column: string): void {
-    if (this.sortColumn() === column) {
-      // Cycle: asc -> desc -> none
-      const current = this.sortDirection();
-      if (current === 'asc') {
-        this.sortDirection.set('desc');
-      } else if (current === 'desc') {
+  onSort(column: string, direction: SortDirection, isToggled: boolean): void {
+    if (!isToggled) {
+      if (!direction) {
         this.sortColumn.set(null);
-        this.sortDirection.set(null);
-        this.groupedSource.refresh();
-        this.viewport?.scrollToIndex(0);
-        return;
+      } else {
+        this.sortColumn.set(column);
       }
+      this.sortDirection.set(direction);
     } else {
-      this.sortColumn.set(column);
-      this.sortDirection.set('asc');
+      if (this.sortColumn() === column) {
+        // Cycle: asc -> desc -> none
+        const current = this.sortDirection();
+        if (current === 'asc') {
+          this.sortDirection.set('desc');
+        } else if (current === 'desc') {
+          this.sortColumn.set(null);
+          this.sortDirection.set(null);
+        }
+      } else {
+        this.sortColumn.set(column);
+        this.sortDirection.set('asc');
+      }
     }
 
-    this.groupedSource.refresh();
-    this.viewport?.scrollToIndex(0);
+    this.getExpandedGroups().forEach((group) => {
+      console.log(
+        'Apply sort to group',
+        group.key,
+        'with column',
+        this.sortColumn(),
+        'and direction',
+        this.sortDirection(),
+      );
+      group.dataSource.sort(this.sortColumn(), this.sortDirection());
+    });
+  }
+
+  private getExpandedGroups(): PriorityGroup[] {
+    return this.priorityGrouped().filter((group) => this.groupExpanded()[group.key]);
   }
 
   onCellInput(event: string, rowIndex: number, colKey: keyof Priority): void {

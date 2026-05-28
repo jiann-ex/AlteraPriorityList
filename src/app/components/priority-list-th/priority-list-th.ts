@@ -35,7 +35,7 @@ import { PriorityListService } from '../../services/priority-list.service';
 import { CdkFixedSizeVirtualScroll, ScrollingModule } from '@angular/cdk/scrolling';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { AsyncPipe } from '@angular/common';
+import { AsyncPipe, NgClass } from '@angular/common';
 import { HlmEmptyImports } from '@spartan-ng/helm/empty';
 
 @Component({
@@ -51,6 +51,7 @@ import { HlmEmptyImports } from '@spartan-ng/helm/empty';
     FormsModule,
     AsyncPipe,
     HlmEmptyImports,
+    NgClass,
   ],
   templateUrl: './priority-list-th.html',
   viewProviders: [
@@ -81,7 +82,7 @@ export class PriorityListTh implements OnInit {
 
   column = input.required<ColumnDef>();
   /** Emit when the sort direction changes */
-  sort = output<void>();
+  sort = output<{ sortDirection: SortDirection; isToggled: boolean }>();
   /** Required to know is this column currently being sort */
   sortColumn = input.required<string | null>();
   /** Required to know the the current column is sorted then need to know its direction */
@@ -192,6 +193,9 @@ export class PriorityListTh implements OnInit {
 
   toggleSort(event: MouseEvent): void {
     event.stopPropagation(); // Prevent the dropdown menu from opening
-    this.sort.emit();
+    this.sort.emit({ sortDirection: null, isToggled: true });
+  }
+  manualSort(direction: SortDirection): void {
+    this.sort.emit({ sortDirection: direction, isToggled: false });
   }
 }

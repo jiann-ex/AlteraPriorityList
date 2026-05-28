@@ -2,7 +2,7 @@ import { CollectionViewer, DataSource, ListRange } from '@angular/cdk/collection
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs/operators';
 import { Priority } from '../types/priority';
-import { PriorityListService, Query } from './priority-list.service';
+import { PriorityListService, PriorityQuery, Query } from './priority-list.service';
 import type { PriorityData } from '../types';
 import { computed, signal } from '@angular/core';
 import { toast } from '@spartan-ng/brain/sonner';
@@ -12,11 +12,6 @@ import { toast } from '@spartan-ng/brain/sonner';
  * Prevent trigger unintended request when user scrolling fast
  */
 const SCROLL_DEBOUNCE_TIME = 300;
-
-export interface SortState {
-  column: string;
-  direction: 'asc' | 'desc';
-}
 /**
  * Allow to filter multiple values or single value for a single column,
  * e.g. filter r1 with both 1 and 3 to show all items with r1=1 or r1=3
@@ -35,6 +30,8 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   private destroy$ = new Subject<void>();
   /** Stored set of fetched list range to prevent refetch same thing again */
   private fetched = new Set<ListRange>();
+  private _sortColumn: string | null = null;
+  private _sortDirection: 'asc' | 'desc' | null = null;
 
   readonly loading$ = this.loading.asObservable();
   get totalCount$() {
@@ -59,6 +56,10 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     super();
     this.totalCount = new BehaviorSubject<number>(this.initialTotal);
     this._data = Array.from({ length: initialTotal }, () => null);
+  }
+
+  private _initData() {
+    this._data = Array.from({ length: this.totalCount.value }, () => null);
   }
 
   /** Initialize all subjects */
@@ -169,8 +170,10 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   }
   private _reset(): void {
     this.fetched.clear();
-    this.data.next([]);
-    this.totalCount.next(0);
+    // Clear current data to prevent mismatch between the data and the sort state, user will see empty list with new sort applied, then the data will be filled in when the new request returns
+    this._initData();
+    // Trigger data update to refresh the view, if not trigger, the view will still show the old data until user scrolls to trigger the fetch with new sort, which might cause confusion
+    this.data.next(Array.from({ length: 8 }, () => null));
   }
   /**
    * Empty the data source without resetting the fetched ranges or total count.
@@ -180,6 +183,14 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
    */
   empty(): void {
     this.data.next([]);
+  }
+
+  sort(column: string | null, direction: 'asc' | 'desc' | null): void {
+    // Clear fetched cache to allow refetch with new sort
+    this.fetched.clear();
+    this._sortColumn = column;
+    this._sortDirection = direction;
+    this._reset();
   }
 
   private _isRangeFetched(range: ListRange): boolean {
@@ -214,9 +225,11 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
 
     this.loading.next(true);
 
-    const query: Query = {
+    const query: PriorityQuery = {
       offset: offset,
       limit: limit,
+      sort: this._sortColumn ?? undefined,
+      sortDirection: this._sortDirection,
     };
 
     this.service

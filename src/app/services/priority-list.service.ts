@@ -5,6 +5,7 @@ import { PagedList } from '../types/paged-list';
 import { mapPriorityFrom, Priority, PriorityGroup, PriorityResponse } from '../types/priority';
 import { delay, Observable, of, tap } from 'rxjs';
 import { PriorityListDataSource } from './priority-list-datasource';
+import { priorityToMaps, SortDirection } from '@app-types/index';
 
 const TOTAL_MOCK_SIZE = 10000;
 const MOCK_DATA: PriorityResponse[] = Array.from({ length: TOTAL_MOCK_SIZE }, (_, i) => ({
@@ -47,12 +48,13 @@ const MOCK_DATA: PriorityResponse[] = Array.from({ length: TOTAL_MOCK_SIZE }, (_
   vpoStepStatus: i % 3,
 }));
 
-export interface PriorityQuery {
-  page: number;
-  pageSize: number;
+export interface PriorityQuery extends Query {
   sort?: string;
-  sortDirection?: 'asc' | 'desc';
-  filters?: Record<string, string>;
+  sortDirection: SortDirection;
+  filters?: {
+    key: string;
+    values: string[];
+  }[];
 }
 
 export interface Query {
@@ -94,9 +96,35 @@ export class PriorityListService {
     // --- END MOCK ---
   }
 
-  getPriorityListByGroup(r1: number | null, query: Query): Observable<PagedList<Priority>> {
+  getPriorityListByGroup(r1: number | null, query: PriorityQuery): Observable<PagedList<Priority>> {
     // --- MOCK: simulate server delay with 10k test data ---
-    const filtered = MOCK_DATA.filter((item) => item.priorityR1 === r1);
+    console.log('Fetching data for group r1=', r1, 'with query=', query);
+
+    // Map key to priority response keys
+    query.sort = query.sort ? priorityToMaps.get(query.sort as keyof Priority) : undefined;
+
+    const filtered = MOCK_DATA.slice()
+      .filter((item) => item.priorityR1 === r1)
+      .filter((item) => {
+        if (!query.filters) return true;
+        return query.filters.every((filter) => {
+          const value = item[filter.key as keyof PriorityResponse];
+          return filter.values.includes(String(value));
+        });
+      })
+      .sort((a, b) => {
+        if (!query.sort) return 0;
+        const aValue = a[query.sort as keyof PriorityResponse];
+        const bValue = b[query.sort as keyof PriorityResponse];
+        if (aValue === null) return 1;
+        if (bValue === null) return -1;
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return query.sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        const aStr = String(aValue);
+        const bStr = String(bValue);
+        return query.sortDirection === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
+      });
     const offset = query.offset;
     const limit = query.limit;
     const page = filtered.slice(offset, offset + limit).map(mapPriorityFrom);
@@ -107,48 +135,6 @@ export class PriorityListService {
       pageSize: query.limit,
     }).pipe(delay(200)); // Simulate 200ms network delay
     // --- END MOCK ---
-  }
-
-  getPriorityList(query: PriorityQuery): Observable<PagedList<Priority>> {
-    // --- MOCK: simulate server delay with 10k test data ---
-    const offset = (query.page - 1) * query.pageSize;
-    const page = MOCK_DATA.map(mapPriorityFrom);
-    return of<PagedList<Priority>>({
-      data: page,
-      count: TOTAL_MOCK_SIZE,
-      page: query.page,
-      pageSize: query.pageSize,
-    }).pipe(
-      delay(200),
-      tap((data) => console.log('Mock data fetched:', data)),
-    ); // Simulate 200ms network delay
-    // --- END MOCK ---
-
-    // let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
-    //
-    // if (query.sort) {
-    //   const direction = query.sortDirection === 'desc' ? '-' : '';
-    //   params = params.set('sort', `${direction}${query.sort}`);
-    // }
-    //
-    // if (query.filters) {
-    //   for (const [key, value] of Object.entries(query.filters)) {
-    //     if (value) {
-    //       params = params.set(key, value);
-    //     }
-    //   }
-    // }
-    //
-    // return this.httpClient
-    //   .get<PagedList<Priority>>(`${this.apiUrl}/api/mes/vpoPriority`, {
-    //     params,
-    //   })
-    //   .pipe(
-    //     map((response) => ({
-    //       ...response,
-    //       data: response.data.map(mapPriorityFrom),
-    //     })),
-    //   );
   }
 
   getPriorityFilterOptions(
