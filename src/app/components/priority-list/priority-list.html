@@ -40,6 +40,7 @@
           [widths]="columnWidths()"
           (widthChange)="onColumnResize(col.key, $event)"
           (sort)="onSort(col.key, $event.sortDirection, $event.isToggled)"
+          (filter)="onFilter(col.key, $event)"
           [sortColumn]="sortColumn()"
           [sortDirection]="sortDirection()"
         ></div>

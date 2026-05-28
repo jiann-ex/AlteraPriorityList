@@ -48,13 +48,16 @@ const MOCK_DATA: PriorityResponse[] = Array.from({ length: TOTAL_MOCK_SIZE }, (_
   vpoStepStatus: i % 3,
 }));
 
+export interface Filter {
+  key: string;
+  /** Priority term instead of values if term is provided */
+  term: string | null;
+  values: string[];
+}
 export interface PriorityQuery extends Query {
   sort?: string;
   sortDirection: SortDirection;
-  filters?: {
-    key: string;
-    values: string[];
-  }[];
+  filters?: Filter[];
 }
 
 export interface Query {
@@ -102,6 +105,10 @@ export class PriorityListService {
 
     // Map key to priority response keys
     query.sort = query.sort ? priorityToMaps.get(query.sort as keyof Priority) : undefined;
+    query.filters = query.filters?.map((filter) => ({
+      ...filter,
+      key: priorityToMaps.get(filter.key as keyof Priority) ?? filter.key,
+    }));
 
     const filtered = MOCK_DATA.slice()
       .filter((item) => item.priorityR1 === r1)

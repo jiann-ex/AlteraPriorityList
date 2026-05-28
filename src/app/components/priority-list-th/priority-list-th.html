@@ -40,15 +40,15 @@
     <!---Sort Options -->
     <hlm-dropdown-menu-label>Sort</hlm-dropdown-menu-label>
     <hlm-dropdown-menu-group>
-      <button hlmDropdownMenuItem (click)="manualSort('asc')">
+      <button hlmDropdownMenuItem (triggered)="manualSort('asc')">
         <ng-icon name="lucideSortAsc"></ng-icon>
         <span>Ascending</span>
       </button>
-      <button hlmDropdownMenuItem (click)="manualSort('desc')">
+      <button hlmDropdownMenuItem (triggered)="manualSort('desc')">
         <ng-icon name="lucideSortDesc"></ng-icon>
         <span>Descending</span>
       </button>
-      <button hlmDropdownMenuItem variant="destructive" (click)="manualSort(null)">
+      <button hlmDropdownMenuItem variant="destructive" (triggered)="manualSort(null)">
         <ng-icon name="lucideX"></ng-icon>
         <span>Clear Sort</span>
       </button>
@@ -74,7 +74,7 @@
           <ng-icon class="text-red-500" name="lucideTrash"></ng-icon>
         </hlm-dropdown-menu-shortcut>
       </button>
-      <button hlmDropdownMenuItem>
+      <button hlmDropdownMenuItem (triggered)="applyFilter()">
         <ng-icon name="lucideCheckCheck"></ng-icon>
         <span>Apply</span>
       </button>

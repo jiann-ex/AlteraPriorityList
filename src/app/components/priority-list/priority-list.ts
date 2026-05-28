@@ -13,7 +13,7 @@ import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { Priority, PriorityGroup } from '../../types/priority';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
-import { PriorityListService } from '../../services/priority-list.service';
+import { Filter, PriorityListService } from '../../services/priority-list.service';
 import { GroupedDataSource } from '../../services/grouped-datasource';
 import { FormsModule } from '@angular/forms';
 import { combineLatest, Subject } from 'rxjs';
@@ -21,7 +21,7 @@ import { takeUntil } from 'rxjs/operators';
 import type { ColumnDef } from '../../types/column-def';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { PriorityData, SortDirection } from '@app-types';
-import { PriorityListTh } from '../priority-list-th/priority-list-th';
+import { FilterState, PriorityListTh } from '../priority-list-th/priority-list-th';
 import { createColumnWidths } from '../priority-list-th';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { GridTableImports } from '../grid-table/grid-table';
@@ -102,7 +102,7 @@ export class PriorityList implements OnInit, OnDestroy {
 
   testToggleTable = signal(false);
 
-  filters: Record<string, string> = {};
+  filters = signal<Filter[]>([]);
 
   protected readonly columns = signal<ColumnDef[]>(columns);
 
@@ -216,15 +216,27 @@ export class PriorityList implements OnInit, OnDestroy {
     }
 
     this.getExpandedGroups().forEach((group) => {
-      console.log(
-        'Apply sort to group',
-        group.key,
-        'with column',
-        this.sortColumn(),
-        'and direction',
-        this.sortDirection(),
-      );
       group.dataSource.sort(this.sortColumn(), this.sortDirection());
+    });
+  }
+
+  onFilter(key: keyof Priority, e: FilterState): void {
+    if (!e) {
+      this.filters.update((prev) => prev.filter((f) => f.key !== key));
+    } else {
+      const newFilter: Filter = {
+        key,
+        term: e.searchTerm,
+        values: e.selected,
+      };
+      this.filters.update((prev) => {
+        const others = prev.filter((f) => f.key !== key);
+        return [...others, newFilter];
+      });
+    }
+
+    this.getExpandedGroups().forEach((group) => {
+      group.dataSource.filter(this.filters());
     });
   }
 

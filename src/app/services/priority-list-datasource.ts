@@ -2,7 +2,7 @@ import { CollectionViewer, DataSource, ListRange } from '@angular/cdk/collection
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs/operators';
 import { Priority } from '../types/priority';
-import { PriorityListService, PriorityQuery, Query } from './priority-list.service';
+import { Filter, PriorityListService, PriorityQuery, Query } from './priority-list.service';
 import type { PriorityData } from '../types';
 import { computed, signal } from '@angular/core';
 import { toast } from '@spartan-ng/brain/sonner';
@@ -12,11 +12,6 @@ import { toast } from '@spartan-ng/brain/sonner';
  * Prevent trigger unintended request when user scrolling fast
  */
 const SCROLL_DEBOUNCE_TIME = 300;
-/**
- * Allow to filter multiple values or single value for a single column,
- * e.g. filter r1 with both 1 and 3 to show all items with r1=1 or r1=3
- */
-export type FilterState = Record<keyof Priority, string[] | string>;
 
 /**
  * DataSource for the priority list, handling server-side pagination, sorting, and filtering.
@@ -32,6 +27,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   private fetched = new Set<ListRange>();
   private _sortColumn: string | null = null;
   private _sortDirection: 'asc' | 'desc' | null = null;
+  private _filters: Filter[] = [];
 
   readonly loading$ = this.loading.asObservable();
   get totalCount$() {
@@ -192,6 +188,13 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     this._sortDirection = direction;
     this._reset();
   }
+  filter(filters: Filter[]): void {
+    // Clear fetched cache to allow refetch with new filter
+    this.fetched.clear();
+    this._filters = filters;
+    // For filter, we can keep the current sort, just need to reset the data and fetch with the new filter
+    this._reset();
+  }
 
   private _isRangeFetched(range: ListRange): boolean {
     for (const fetchedRange of this.fetched) {
@@ -230,6 +233,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
       limit: limit,
       sort: this._sortColumn ?? undefined,
       sortDirection: this._sortDirection,
+      filters: this._filters.length > 0 ? this._filters : undefined,
     };
 
     this.service

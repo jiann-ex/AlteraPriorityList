@@ -38,6 +38,12 @@ import { FormsModule } from '@angular/forms';
 import { AsyncPipe, NgClass } from '@angular/common';
 import { HlmEmptyImports } from '@spartan-ng/helm/empty';
 
+export type FilterState = {
+  includeBlank: boolean;
+  searchTerm: string | null;
+  selected: string[];
+} | null;
+
 @Component({
   selector: '[appPriorityListTh], [appPriorityListCol]',
   imports: [
@@ -85,6 +91,12 @@ export class PriorityListTh implements OnInit {
   sort = output<{ sortDirection: SortDirection; isToggled: boolean }>();
   /** Required to know is this column currently being sort */
   sortColumn = input.required<string | null>();
+  /**
+   * When null, just clear the filter,
+   * when string is provided, it means filter with the term,
+   * when includeBlank is true, it means include blank value in the filter result
+   */
+  filter = output<FilterState>();
   /** Required to know the the current column is sorted then need to know its direction */
   sortDirection = input.required<SortDirection>();
   widths = input<Record<string, number>>({});
@@ -189,6 +201,7 @@ export class PriorityListTh implements OnInit {
   }
   clearSelect(): void {
     this.selectedOptions.set(new Set());
+    this.applyFilter();
   }
 
   toggleSort(event: MouseEvent): void {
@@ -197,5 +210,25 @@ export class PriorityListTh implements OnInit {
   }
   manualSort(direction: SortDirection): void {
     this.sort.emit({ sortDirection: direction, isToggled: false });
+  }
+
+  applyFilter(): void {
+    if (!this.searchTerm() && !this.blank() && this.selectedOptions().size === 0) {
+      this.clearFilter();
+      return;
+    }
+
+    this.filter.emit({
+      includeBlank: this.blank(),
+      searchTerm: this.searchTerm(),
+      selected: Array.from(this.selectedOptions()),
+    });
+  }
+
+  clearFilter(): void {
+    this.blank.set(false);
+    this.searchTerm.set(null);
+    this.selectedOptions.set(new Set());
+    this.filter.emit(null);
   }
 }
