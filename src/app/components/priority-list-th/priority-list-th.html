@@ -1,13 +1,19 @@
-<div class="flex justify-between items-center w-full">
+<div class="group flex justify-between items-center w-full">
   <div [ariaLabel]="column().label" class="flex-1 text-nowrap text-ellipsis overflow-hidden">
     {{ column().label }}
   </div>
   <div class="flex-none">
-    <button class="cursor-pointer" hlmBtn variant="ghost" size="icon-xs">
+    <button
+      class="cursor-pointer hidden group-hover:flex"
+      hlmBtn
+      variant="outline"
+      size="icon-xs"
+      (click)="toggleSort($event)"
+    >
       <ng-icon name="lucideSortAsc"></ng-icon>
     </button>
     @if (selectedOptions().size > 0) {
-      <button class="cursor-pointer" hlmBtn variant="ghost" size="icon-xs">
+      <button class="cursor-pointer" hlmBtn variant="destructive" size="icon-xs">
         <ng-icon name="lucideFilterX"></ng-icon>
       </button>
     }
@@ -24,17 +30,16 @@
     <hlm-dropdown-menu-label>Sort</hlm-dropdown-menu-label>
     <hlm-dropdown-menu-group>
       <button hlmDropdownMenuItem>
+        <ng-icon name="lucideSortAsc"></ng-icon>
         <span>Ascending</span>
-        <hlm-dropdown-menu-shortcut>
-          <ng-icon name="lucideSortAsc"></ng-icon>
-        </hlm-dropdown-menu-shortcut>
       </button>
-
       <button hlmDropdownMenuItem>
+        <ng-icon name="lucideSortDesc"></ng-icon>
         <span>Descending</span>
-        <hlm-dropdown-menu-shortcut>
-          <ng-icon name="lucideSortDesc"></ng-icon>
-        </hlm-dropdown-menu-shortcut>
+      </button>
+      <button hlmDropdownMenuItem variant="destructive">
+        <ng-icon name="lucideX"></ng-icon>
+        <span>Clear Sort</span>
       </button>
     </hlm-dropdown-menu-group>
 
@@ -57,6 +62,10 @@
         <hlm-dropdown-menu-shortcut>
           <ng-icon class="text-red-500" name="lucideTrash"></ng-icon>
         </hlm-dropdown-menu-shortcut>
+      </button>
+      <button hlmDropdownMenuItem>
+        <ng-icon name="lucideCheckCheck"></ng-icon>
+        <span>Apply</span>
       </button>
       <div class="my-1">
         <input

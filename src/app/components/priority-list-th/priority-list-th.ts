@@ -14,7 +14,14 @@ import {
 } from '@angular/core';
 import { ColumnDef } from '../../types/column-def';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideFilterX, lucideSortAsc, lucideSortDesc, lucideTrash } from '@ng-icons/lucide';
+import {
+  lucideX,
+  lucideCheckCheck,
+  lucideFilterX,
+  lucideSortAsc,
+  lucideSortDesc,
+  lucideTrash,
+} from '@ng-icons/lucide';
 import { NullableString, priorityToMaps, SortDirection } from '@app-types';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmInputImports } from '@spartan-ng/helm/input';
@@ -30,11 +37,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { AsyncPipe } from '@angular/common';
 import { HlmEmptyImports } from '@spartan-ng/helm/empty';
-
-// Custom virtual scroll settings
-const OPTION_HEIGHT = 32; // px per item
-const VISIBLE_COUNT = 8; // items visible at once
-const BUFFER = 3; // extra items above/below
 
 @Component({
   selector: '[appPriorityListTh], [appPriorityListCol]',
@@ -57,6 +59,8 @@ const BUFFER = 3; // extra items above/below
       lucideSortDesc,
       lucideTrash,
       lucideFilterX,
+      lucideCheckCheck,
+      lucideX,
     }),
   ],
   host: {
@@ -184,5 +188,10 @@ export class PriorityListTh implements OnInit {
   }
   clearSelect(): void {
     this.selectedOptions.set(new Set());
+  }
+
+  toggleSort(event: MouseEvent): void {
+    event.stopPropagation(); // Prevent the dropdown menu from opening
+    this.sort.emit();
   }
 }
