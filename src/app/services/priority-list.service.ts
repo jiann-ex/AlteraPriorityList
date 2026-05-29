@@ -3,10 +3,17 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '@environment';
 import { PagedList } from '../types/paged-list';
 import { mapPriorityFrom, Priority, PriorityGroup, PriorityResponse } from '../types/priority';
-import { delay, Observable, of, tap } from 'rxjs';
+import { delay, map, Observable, of, tap } from 'rxjs';
 import { PriorityListDataSource } from './priority-list-datasource';
-import { mapPriorityPayload, priorityToMaps, SortDirection } from '@app-types/index';
+import {
+  mapPriorityPayload,
+  PriorityGroupData,
+  priorityToMaps,
+  SortDirection,
+} from '@app-types/index';
 
+// Set to false to use real API calls (make sure to configure environment.apiUrl)
+const USE_MOCK = false;
 const TOTAL_MOCK_SIZE = 10000;
 const MOCK_DATA: PriorityResponse[] = Array.from({ length: TOTAL_MOCK_SIZE }, (_, i) => ({
   id: `mock-${i}`,
@@ -78,6 +85,19 @@ export class PriorityListService {
    * @returns
    */
   getPriorityGroups(): Observable<PriorityGroup[]> {
+    if (!USE_MOCK) {
+      return this.httpClient
+        .get<PriorityGroupData[]>(`${this.apiUrl}/api/mes/vpoPriority/groups`)
+        .pipe(
+          map((groups) =>
+            groups.map((group) => {
+              const dataSource = new PriorityListDataSource(this, group.r1, group.total);
+              return new PriorityGroup(group.r1, group.total, dataSource);
+            }),
+          ),
+        );
+    }
+
     // --- MOCK: simulate server delay with 10k test data ---
     const groupMap = new Map<number | null, number>();
     for (const item of MOCK_DATA) {
@@ -101,8 +121,19 @@ export class PriorityListService {
   }
 
   getPriorityListByGroup(r1: number | null, query: PriorityQuery): Observable<PagedList<Priority>> {
+    if (!USE_MOCK) {
+      let params = new HttpParams();
+      if (r1) {
+        params = params.set('r1', String(r1));
+      }
+      return this.httpClient
+        .post<
+          PagedList<PriorityResponse>
+        >(`${this.apiUrl}/api/mes/vpoPriority/prioritiesByGroup`, query, { params })
+        .pipe(map((response) => ({ ...response, data: response.data.map(mapPriorityFrom) })));
+    }
+
     // --- MOCK: simulate server delay with 10k test data ---
-    console.log('Fetching data for group r1=', r1, 'with query=', query);
 
     // Map key to priority response keys
     query.sort = query.sort ? priorityToMaps.get(query.sort as keyof Priority) : undefined;
@@ -174,6 +205,24 @@ export class PriorityListService {
     query: Query,
     term: string | null,
   ): Observable<PagedList<string>> {
+    if (!USE_MOCK) {
+      const params = new HttpParams()
+        .set('key', prop)
+        .set('offset', String(query.offset))
+        .set('limit', String(query.limit));
+
+      if (term) {
+        params.set('term', term);
+      }
+      return this.httpClient.post<PagedList<string>>(
+        `${this.apiUrl}/api/mes/vpoPriority/options`,
+        query,
+        {
+          params,
+        },
+      );
+    }
+
     // --- MOCK: return unique values for the requested property from the mock data ---
     const offset = query.offset;
     const limit = query.limit;

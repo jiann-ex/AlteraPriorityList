@@ -47,7 +47,7 @@ export class GridTable {
   //private readonly _grid = inject(Grid, { self: true });
 
   constructor() {
-    classes(() => 'grid w-full caption-bottom text-sm');
+    classes(() => 'grid w-full caption-bottom border text-sm');
     //console.log('GridTable initialized with grid instance:', this._grid.);
   }
 }
@@ -301,7 +301,7 @@ export class GridTableHead {
   constructor() {
     classes(
       () =>
-        'text-foreground flex items-center h-10 px-2 text-start font-medium whitespace-nowrap [&:has([role=checkbox])]:pe-0 hover:bg-muted',
+        'text-foreground flex items-center h-10 px-2 text-start font-medium whitespace-nowrap [&:has([role=checkbox])]:pe-0 hover:bg-muted border-r last:border-r-0',
     );
   }
 }
@@ -334,7 +334,7 @@ export class GridTableCell {
   constructor() {
     classes(
       () =>
-        'p-2 whitespace-nowrap [&:has([role=checkbox])]:pe-0 hover:bg-muted text-nowrap text-ellipsis overflow-hidden ' +
+        'p-2 whitespace-nowrap [&:has([role=checkbox])]:pe-0 hover:bg-muted text-nowrap text-ellipsis overflow-hidden border-r last:border-r-0 ' +
         'data-[active=true]:bg-muted data-[active=true]:outline data-[active=true]:outline-2 data-[active=true]:outline-offset-[-2px] data-[active=true]:outline-primary/50',
     );
     this._gridCell.active;
