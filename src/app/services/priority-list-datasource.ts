@@ -258,7 +258,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
           let current = this._data;
           // In this case, we have newer version of the list
           // The old _data might not valid anymore, so we need to create a new one with the new total size
-          if (current.length < total) {
+          if (current.length != total) {
             // Rearrange _data as the order might not correct, might have duplicate display with the wrong order,
             // need to rearrange it to the correct order with the offset and limit
             // To be simple, just recreate the old array

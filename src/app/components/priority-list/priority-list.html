@@ -207,6 +207,17 @@
         </div>
         <!-- Data rows -->
         @if (groupExpanded()[group.key]) {
+          @if (group.total === 0) {
+            <div class="col-span-4" hlmEmpty>
+              <div hlmEmptyHeader>
+                <div hlmEmptyMedia variant="icon">
+                  <ng-icon name="lucideBox" />
+                </div>
+                <div hlmEmptyTitle>No Data Found</div>
+                <div hlmEmptyDescription>Try adjusting your filters or updating the data.</div>
+              </div>
+            </div>
+          }
           <div
             class="h-10"
             gridTableRow

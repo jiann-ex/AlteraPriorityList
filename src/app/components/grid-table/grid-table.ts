@@ -420,8 +420,18 @@ export class GridTableCellInput
   }
   private _focus() {
     setTimeout(() => {
+      const el = this._el.nativeElement;
       // Focus back the element after change to prevent losing focus when typing fast
-      this._el.nativeElement.focus && this._el.nativeElement.focus();
+      if (el.focus) el.focus();
+      // Place cursor at the end of the content to prevent typing to the left
+      const selection = window.getSelection();
+      if (selection && el.childNodes.length > 0) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false); // collapse to end
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     });
   }
   writeValue(obj: any): void {

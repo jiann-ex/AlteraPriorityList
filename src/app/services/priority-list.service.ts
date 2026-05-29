@@ -116,23 +116,32 @@ export class PriorityListService {
       .filter((item) => {
         if (!query.filters) return true;
         return query.filters.every((filter) => {
-          let blankFlag = true;
-
-          if (filter.includeBlank && filter.includeBlank === true) {
-            const value = item[filter.key as keyof PriorityResponse];
-            if (value === null || value === undefined) {
-              blankFlag = true;
-            } else {
-              blankFlag = false;
-            }
-          }
-
-          if (filter.term) {
-            const value = item[filter.key as keyof PriorityResponse];
-            return blankFlag || String(value).toLowerCase().includes(filter.term.toLowerCase());
-          }
           const value = item[filter.key as keyof PriorityResponse];
-          return blankFlag || filter.values.includes(String(value));
+          const isBlank = value === null || value === undefined;
+          const hasTerm = !!filter.term;
+          const hasValues = filter.values && filter.values.length > 0;
+
+          // If only includeBlank is set (no term/values), filter to only blank values
+          if (filter.includeBlank && !hasTerm && !hasValues) {
+            return isBlank;
+          }
+
+          // If blank, include only if includeBlank is true
+          if (isBlank) {
+            return filter.includeBlank;
+          }
+
+          // Check term match
+          if (hasTerm) {
+            return String(value).toLowerCase().includes(filter.term!.toLowerCase());
+          }
+
+          // Check values match
+          if (hasValues) {
+            return filter.values.includes(String(value));
+          }
+
+          return true;
         });
       })
       .sort((a, b) => {

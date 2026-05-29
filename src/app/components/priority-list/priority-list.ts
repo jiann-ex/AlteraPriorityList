@@ -26,13 +26,14 @@ import { GridTableImports } from '../grid-table/grid-table';
 import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideCircleChevronDown, lucideCircleChevronRight } from '@ng-icons/lucide';
+import { lucideCircleChevronDown, lucideCircleChevronRight, lucideBox } from '@ng-icons/lucide';
 import { PriorityListDataSource } from '../../services/priority-list-datasource';
 import { AsyncPipe, NgClass } from '@angular/common';
 import { columns } from './priority-list-columns';
 import { HlmDialogImports } from '@spartan-ng/helm/dialog';
 import { CdkObserveContent } from '@angular/cdk/observers';
 import { toast } from '@spartan-ng/brain/sonner';
+import { HlmEmptyImports } from '@spartan-ng/helm/empty';
 
 @Component({
   selector: 'app-priority-list',
@@ -53,7 +54,7 @@ import { toast } from '@spartan-ng/brain/sonner';
     NgClass,
     AsyncPipe,
     HlmDialogImports,
-    CdkObserveContent,
+    HlmEmptyImports,
   ],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',
@@ -64,6 +65,7 @@ import { toast } from '@spartan-ng/brain/sonner';
     provideIcons({
       lucideCircleChevronRight,
       lucideCircleChevronDown,
+      lucideBox,
     }),
   ],
 })
