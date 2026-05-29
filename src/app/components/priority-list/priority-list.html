@@ -20,8 +20,84 @@
               Make changes to your edited priorities here. Click save when you're done.
             </p>
           </hlm-dialog-header>
-          <div class="">
-            <p>Content Here</p>
+          <div class="overflow-x-auto">
+            <div
+              gridTable
+              [style.grid-template-columns]="gridTemplateColumns() + ' minmax(0, 1fr)'"
+            >
+              <div gridTableHeader>
+                <div
+                  gridTableRow
+                  cdkDropList
+                  cdkDropListOrientation="horizontal"
+                  (cdkDropListDropped)="dropColumn($event)"
+                >
+                  @for (col of columns(); track col.key) {
+                    <div cdkDrag gridTableHead>{{ col.label }}</div>
+                  }
+                </div>
+              </div>
+              <cdk-virtual-scroll-viewport
+                gridTableBody
+                class="overflow-x-hidden! h-80"
+                [itemSize]="40"
+                [minBufferPx]="320"
+                [maxBufferPx]="620"
+              >
+                <div
+                  class="h-10"
+                  gridTableRow
+                  *cdkVirtualFor="let row of editedItems(); let rowIndex = index"
+                >
+                  @for (col of columns(); let colIndex = $index; track col.key) {
+                    @if (!row) {
+                      <div
+                        gridTableCell
+                        [rowIndex]="rowIndex"
+                        [colIndex]="colIndex"
+                        [class]="col.class ?? ''"
+                      >
+                        <hlm-skeleton class="h-4 w-full" />
+                      </div>
+                    } @else {
+                      @switch (col.key) {
+                        @case ('priority') {
+                          <div
+                            gridTableCellCheckbox
+                            (activated)="gridActive()"
+                            [rowIndex]="rowIndex"
+                            [colIndex]="colIndex"
+                            [class]="col.class ?? ''"
+                            [ngModel]="row[col.key]"
+                          ></div>
+                        }
+                        @case ('r1')
+                        @case ('r2') {
+                          <div
+                            gridTableCellInput
+                            (activated)="gridActive()"
+                            [rowIndex]="rowIndex"
+                            [colIndex]="colIndex"
+                            [class]="col.class ?? ''"
+                            [ngModel]="row[col.key]"
+                          ></div>
+                        }
+                        @default {
+                          <div
+                            gridTableCell
+                            [rowIndex]="rowIndex"
+                            [colIndex]="colIndex"
+                            [class]="col.class ?? ''"
+                          >
+                            {{ row[col.key] }}
+                          </div>
+                        }
+                      }
+                    }
+                  }
+                </div>
+              </cdk-virtual-scroll-viewport>
+            </div>
           </div>
           <hlm-dialog-footer>
             <button hlmBtn variant="outline" hlmDialogClose>Cancel</button>
@@ -180,120 +256,3 @@
     }
   }
 </div>
-
-<!-- AI Generated test table to see the group results -->
-<!-- <h1 class="mt-5">AI Generated test table to see the group results</h1>
-<cdk-virtual-scroll-viewport
-  class="h-[600px] rounded-md border"
-  [itemSize]="40"
-  [minBufferPx]="200"
-  [maxBufferPx]="400"
->
-  <div gridTable [style.grid-template-columns]="gridTemplateColumns() + ' minmax(0, 1fr)'">
-    <div gridTableHeader sticky>
-      <div
-        gridTableRow
-        cdkDropList
-        cdkDropListOrientation="horizontal"
-        (cdkDropListDropped)="dropColumn($event)"
-      >
-        @for (col of columns(); track col.key) {
-          <div
-            cdkDrag
-            gridTableHead
-            appPriorityListTh
-            hlmTooltip
-            [hlmTooltip]="col.label"
-            [column]="col"
-            [widths]="columnWidths()"
-            (widthChange)="onColumnResize(col.key, $event)"
-            (sort)="onSort(col.key)"
-            [sortColumn]="sortColumn()"
-            [sortDirection]="sortDirection()"
-          ></div>
-        }
-      </div>
-    </div>
-
-    <div gridTableBody>
-      <ng-container *cdkVirtualFor="let row of groupedSource; let rowIndex = index">
-        @if (row.type === 'group') {
-          <div
-            gridTableGroupRow
-            class="h-[40px]"
-            [expanded]="row.expanded"
-            (toggled)="onGroupToggle(row.key)"
-          >
-            <div
-              gridTableCell
-              [rowIndex]="rowIndex"
-              [colIndex]="0"
-              class="col-span-full flex items-center gap-2 font-medium"
-            >
-              <span class="text-xs">{{ row.expanded ? '▼' : '▶' }}</span>
-              {{ row.label }}
-            </div>
-          </div>
-        } @else if (!row.item) {
-          <div gridTableRow class="h-[40px] animate-pulse">
-            @for (col of columns(); let colIndex = $index; track col.key) {
-              <div
-                gridTableCell
-                [rowIndex]="rowIndex"
-                [colIndex]="colIndex"
-                [class]="col.class ?? ''"
-              >
-                <hlm-skeleton class="h-4 w-full" />
-              </div>
-            }
-          </div>
-        } @else {
-          <div gridTableRow class="h-[40px]">
-            @for (col of columns(); let colIndex = $index; track col.key) {
-              @if (col.editable && row.item) {
-                @if (col.key === 'priority') {
-                  <div
-                    gridTableCellCheckbox
-                    (activated)="gridActive()"
-                    [rowIndex]="rowIndex"
-                    [colIndex]="colIndex"
-                    [class]="col.class ?? ''"
-                    [ngModel]="row.item[col.key]"
-                    (ngModelChange)="onCellInput($event, rowIndex, col.key)"
-                  ></div>
-                } @else {
-                  <div
-                    gridTableCellInput
-                    (activated)="gridActive()"
-                    [rowIndex]="rowIndex"
-                    [colIndex]="colIndex"
-                    [class]="col.class ?? ''"
-                    [ngModel]="row.item[col.key]"
-                    (ngModelChange)="onCellInput($event, rowIndex, col.key)"
-                  ></div>
-                }
-              } @else {
-                <div
-                  gridTableCell
-                  (activated)="gridActive()"
-                  [rowIndex]="rowIndex"
-                  [colIndex]="colIndex"
-                  [class]="col.class ?? ''"
-                >
-                  {{ getCellValue(row.item, col.key) }}
-                </div>
-              }
-            }
-          </div>
-        }
-      </ng-container>
-    </div>
-  </div>
-</cdk-virtual-scroll-viewport>
-
-<div class="text-muted-foreground flex items-center gap-2 px-2 py-1 text-xs">
-  <span>{{ groupedSource.total }} rows</span>
-  @if (isLoading()) {
-    <hlm-spinner size="sm" />
-  }
-</div> -->

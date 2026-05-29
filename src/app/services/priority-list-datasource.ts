@@ -275,7 +275,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
               current[offset + i] = response.data[i];
             }
           }
-          console.log('Current', current);
+
           this.data.next(current);
         },
         error: () => {
