@@ -1,5 +1,5 @@
 import { CollectionViewer, DataSource, ListRange } from '@angular/cdk/collections';
-import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs/operators';
 import { Priority } from '../types/priority';
 import { Filter, PriorityListService, PriorityQuery, Query } from './priority-list.service';
@@ -19,7 +19,7 @@ const SCROLL_DEBOUNCE_TIME = 300;
  */
 export class PriorityListDataSource extends DataSource<PriorityData> {
   private _data: PriorityData[] = [];
-  private data!: BehaviorSubject<PriorityData[]>;
+  private data?: BehaviorSubject<PriorityData[]>;
   private readonly loading = new BehaviorSubject<boolean>(false);
   private readonly totalCount;
   private destroy$ = new Subject<void>();
@@ -67,7 +67,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   private _destroy() {
     this.destroy$.next();
     this.destroy$.complete();
-    this.data.complete();
+    this.data?.complete();
   }
 
   destroy() {
@@ -95,9 +95,9 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
         this._fetchRange(range);
       });
 
-    this.data.next(this._data);
+    this.data?.next(this._data);
     // In template, can directly use in *cdkVirtualFor="let item of dataSource"
-    return this.data.asObservable();
+    return this.data?.asObservable() ?? of([]);
   }
 
   disconnect(): void {
@@ -109,6 +109,16 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   refresh(): void {
     //this._reset();
     //this.data.next(this._data);
+    console.log(this.totalCount.value);
+    if (this.totalCount.value === 0) {
+      // Reset totalCount to initialTotal so viewport has items to render and triggers viewChange
+      this.totalCount.next(this.initialTotal);
+      // Trigger back the viewChanges
+      this._reset();
+      console.log(
+        'Refresh the data source with total count 0, trigger viewChange to fetch the new data',
+      );
+    }
   }
 
   // Eventho replace with new instance is recommended
@@ -125,7 +135,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     }
 
     current[index] = { ...item, [field]: value };
-    this.data.next(current);
+    this.data?.next(current);
     this._editedItems.update((prev) => {
       const newMap = new Map(prev);
       newMap.set(priority.id, current[index] as Priority);
@@ -145,7 +155,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     });
 
     current[index] = { ...item, [field]: previousValue };
-    this.data.next(current);
+    this.data?.next(current);
 
     // Check if the item is back to its original fetched state — if so, remove from edited map
     const original = this._originalItems.get(priority.id);
@@ -171,7 +181,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     // Trigger data update to refresh the view, if not trigger, the view will still show the old data until user scrolls to trigger the fetch with new sort, which might cause confusion
     // NOTE: 8 is just an magic number ti matches the height when display items in the cdk virtual scroll
     // To meke the placeholders loading look nice
-    this.data.next(Array.from({ length: 8 }, () => null));
+    this.data?.next(Array.from({ length: 8 }, () => null));
   }
   /** Find the index of an item in the data array by its id. Returns -1 if not found. */
   findIndexById(id: string): number {
@@ -185,7 +195,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
    * Public method for the expandable component to call this function when collapse the group
    */
   empty(): void {
-    this.data.next([]);
+    this.data?.next([]);
   }
 
   sort(column: string | null, direction: 'asc' | 'desc' | null): void {
@@ -199,8 +209,13 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     // Clear fetched cache to allow refetch with new filter
     this.fetched.clear();
     this._filters = filters;
+    // Reset totalCount to initialTotal so _initData creates a properly sized array,
+    // allowing the viewport to trigger a viewChange and refetch data.
+    // The actual count will be updated when the API response returns.
+    this.totalCount.next(this.initialTotal);
     // For filter, we can keep the current sort, just need to reset the data and fetch with the new filter
     this._reset();
+    console.log('Apply filters:', filters);
   }
 
   private _isRangeFetched(range: ListRange): boolean {
@@ -281,7 +296,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
             }
           }
 
-          this.data.next(current);
+          this.data?.next(current);
         },
         error: () => {
           // Allow retry on next scroll
@@ -295,11 +310,11 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
 
   /** Update a single item in the local cache (after API confirms the save). */
   updateItem(index: number, field: keyof Priority, value: unknown): void {
-    const current = this.data.value.slice();
+    const current = this.data?.value.slice() ?? [];
     const item = current[index];
     if (item) {
       (current[index] as any) = { ...item, [field]: value };
-      this.data.next(current);
+      this.data?.next(current);
     }
   }
 }

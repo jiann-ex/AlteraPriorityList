@@ -182,6 +182,8 @@ export class PriorityList implements OnInit, OnDestroy {
     if (!isNowExpanded) {
       group.dataSource.empty();
       console.log('Clear the data source');
+    } else {
+      //group.dataSource.refresh();
     }
   }
   printDataSource(e: any): void {
@@ -228,7 +230,7 @@ export class PriorityList implements OnInit, OnDestroy {
       }
     }
 
-    this.getExpandedGroups().forEach((group) => {
+    this.priorityGrouped().forEach((group) => {
       group.dataSource.sort(this.sortColumn(), this.sortDirection());
     });
   }
@@ -249,12 +251,12 @@ export class PriorityList implements OnInit, OnDestroy {
       });
     }
 
-    this.getExpandedGroups().forEach((group) => {
+    this.priorityGrouped().forEach((group) => {
       group.dataSource.filter(this.filters());
     });
   }
 
-  private getExpandedGroups(): PriorityGroup[] {
+  private _getExpandedGroups(): PriorityGroup[] {
     return this.priorityGrouped().filter((group) => this.groupExpanded()[group.key]);
   }
 
