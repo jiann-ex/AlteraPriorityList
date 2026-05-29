@@ -41,14 +41,23 @@ export interface PriorityResponse {
   isCurrentWorking: boolean;
   vpoStepStatus: number;
 }
-export interface PriorityPayload {}
+export interface PriorityPayload {
+  vpoAssignPriorityInfoList: {
+    isPriority: boolean;
+    priorityR1: NullableNumber;
+    priorityR2: NullableNumber;
+    vpoStepId: string;
+    equipmentFreeText: NullableString;
+    comment: NullableString;
+  }[];
+}
 
 export interface Priority {
   id: string;
   priority: boolean;
   r1: NullableNumber;
   r2: NullableNumber;
-  equipment: NullableNumber;
+  equipment: NullableString;
   vpo: string;
   vpoForecastQuantity: number;
   testTimePerUnit: NullableNumber;
@@ -141,9 +150,16 @@ export const mapPriorityFrom = (data: PriorityResponse): Priority =>
     qdf: data.qdf,
   }) as Priority;
 /** Map from Priority to API request */
-export const mapPriorityTo = (priority: Priority): any =>
+export const mapPriorityPayload = (priority: Priority[]): PriorityPayload =>
   ({
-    id: priority.id,
+    vpoAssignPriorityInfoList: priority.map((p) => ({
+      isPriority: p.priority,
+      priorityR1: p.r1,
+      priorityR2: p.r2,
+      vpoStepId: p.vpo,
+      equipmentFreeText: p.equipment,
+      comment: p.stepComment,
+    })),
   }) as any;
 /**
  * null should display placeholder wait for it to be loaded

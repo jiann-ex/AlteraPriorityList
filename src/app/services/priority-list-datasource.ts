@@ -38,7 +38,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
    * Stored edited items and update the data to the edited one
    * when there is match with the id
    */
-  private readonly _editedItems = signal<Map<string, PriorityData>>(new Map());
+  private readonly _editedItems = signal<Map<string, Priority>>(new Map());
   /** Original state of items before any edits, used to detect full revert */
   private readonly _originalItems = new Map<string, PriorityData>();
   readonly editedItems = computed(() => Array.from(this._editedItems().values()));
@@ -114,8 +114,8 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
   // Eventho replace with new instance is recommended
   // But i think its expensive to create new instance every time when edit an item
   editItem(index: number, priority: Priority, field: keyof Priority, value: unknown): void {
-    const current = this.data.value;
-    const item = current[index];
+    const current = this._data;
+    const item = current[index] as Priority;
 
     if (!item) return;
 
@@ -128,7 +128,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     this.data.next(current);
     this._editedItems.update((prev) => {
       const newMap = new Map(prev);
-      newMap.set(priority.id, current[index]);
+      newMap.set(priority.id, current[index] as Priority);
       return newMap;
     });
   }
@@ -159,7 +159,7 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     } else {
       this._editedItems.update((prev) => {
         const newMap = new Map(prev);
-        newMap.set(priority.id, current[index]);
+        newMap.set(priority.id, current[index] as Priority);
         return newMap;
       });
     }
@@ -173,6 +173,11 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
     // To meke the placeholders loading look nice
     this.data.next(Array.from({ length: 8 }, () => null));
   }
+  /** Find the index of an item in the data array by its id. Returns -1 if not found. */
+  findIndexById(id: string): number {
+    return this._data.findIndex((item) => item?.id === id);
+  }
+
   /**
    * Empty the data source without resetting the fetched ranges or total count.
    * For to close the expanded row, clear the data will not making the cdk viewport confusing with the height calculation

@@ -69,6 +69,7 @@
                             [colIndex]="colIndex"
                             [class]="col.class ?? ''"
                             [ngModel]="row[col.key]"
+                            (ngModelChange)="editDialogBooleanItem(row, col.key, $event)"
                           ></div>
                         }
                         @case ('r1')
@@ -80,6 +81,7 @@
                             [colIndex]="colIndex"
                             [class]="col.class ?? ''"
                             [ngModel]="row[col.key]"
+                            (ngModelChange)="editDialogNumberItem(row, col.key, $event)"
                           ></div>
                         }
                         @default {
@@ -101,11 +103,23 @@
           </div>
           <hlm-dialog-footer>
             <button hlmBtn variant="outline" hlmDialogClose>Cancel</button>
-            <button hlmBtn type="submit">Save changes</button>
+            <button hlmBtn type="submit" [disabled]="isSaving()" (click)="saveChanges()">
+              @if (isSaving()) {
+                <hlm-spinner size="sm" /> Saving...
+              } @else {
+                Save changes
+              }
+            </button>
           </hlm-dialog-footer>
         </hlm-dialog-content>
       </hlm-dialog>
-      <button hlmBtn>Save Changes</button>
+      <button hlmBtn [disabled]="isSaving()" (click)="saveChanges()">
+        @if (isSaving()) {
+          <hlm-spinner size="sm" /> Saving...
+        } @else {
+          Save changes
+        }
+      </button>
     }
   </div>
 </div>
@@ -140,7 +154,7 @@
     </div>
   </div>
 
-  @if (!priorityGrouped()) {
+  @if (isLoading()) {
     <div gridTableBody>
       <!-- Placeholder for loading group data -->
       <div gridTableRow class="h-10">

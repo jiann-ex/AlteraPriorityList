@@ -5,7 +5,7 @@ import { PagedList } from '../types/paged-list';
 import { mapPriorityFrom, Priority, PriorityGroup, PriorityResponse } from '../types/priority';
 import { delay, Observable, of, tap } from 'rxjs';
 import { PriorityListDataSource } from './priority-list-datasource';
-import { priorityToMaps, SortDirection } from '@app-types/index';
+import { mapPriorityPayload, priorityToMaps, SortDirection } from '@app-types/index';
 
 const TOTAL_MOCK_SIZE = 10000;
 const MOCK_DATA: PriorityResponse[] = Array.from({ length: TOTAL_MOCK_SIZE }, (_, i) => ({
@@ -195,6 +195,57 @@ export class PriorityListService {
     return this.httpClient.patch<Priority>(
       `${this.apiUrl}/api/mes/vpoPriority/${encodeURIComponent(id)}`,
       { [field]: value },
+    );
+  }
+
+  saveChanges(editedPriorities: Priority[]): Observable<void> {
+    const payload = mapPriorityPayload(editedPriorities);
+    console.log('Saving changes with payload:', payload);
+    // --- MOCK: Simulate API call and response ---
+    return of(undefined).pipe(
+      delay(500), // Simulate network delay
+      tap(() => {
+        // Update the MOCK_DATA with the changes
+        for (const edited of editedPriorities) {
+          const index = MOCK_DATA.findIndex((item) => item.id === edited.id);
+          if (index !== -1) {
+            const current = MOCK_DATA[index];
+            const updated: PriorityResponse = {
+              ...current,
+              isPriority: edited.priority,
+              priorityR1: edited.r1,
+              priorityR2: edited.r2,
+              equipment: edited.equipment,
+              vpo: edited.vpo,
+              vpoForecastQuantity: edited.vpoForecastQuantity,
+              testPerUnit: edited.testTimePerUnit,
+              locationCode: edited.locationCode,
+              vpoSource: edited.vpoSource,
+              vpoDescription: edited.vpoDescription,
+              stepSeq: edited.stepSequence,
+              stepSeqDisplay: `S${edited.stepSequence}`,
+              step: edited.step,
+              engineerName: edited.engineerName,
+              stepComment: edited.stepComment,
+              product: edited.product,
+              partType: edited.partType,
+              stepState: edited.stepState,
+              engId: edited.engId,
+              vpoType: edited.vpoType,
+              stepType: edited.stepType,
+              activityType: edited.activityType,
+              stepSpecialInstruction: edited.stepSpecialInstruction,
+              stepTimeDuration: edited.stepTimeDuration,
+              recipe: edited.recipe,
+              lastChangesBy: edited.lastChangesBy,
+              hri: edited.hri,
+              mrv: edited.mrv,
+              qdf: edited.qdf,
+            };
+            MOCK_DATA[index] = updated;
+          }
+        }
+      }),
     );
   }
 }

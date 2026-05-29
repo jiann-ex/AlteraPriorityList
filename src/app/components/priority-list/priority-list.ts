@@ -15,7 +15,7 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 import { Filter, PriorityListService } from '../../services/priority-list.service';
 import { FormsModule } from '@angular/forms';
 import { combineLatest, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { finalize, takeUntil } from 'rxjs/operators';
 import type { ColumnDef } from '../../types/column-def';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { PriorityData, SortDirection } from '@app-types';
@@ -31,6 +31,8 @@ import { PriorityListDataSource } from '../../services/priority-list-datasource'
 import { AsyncPipe, NgClass } from '@angular/common';
 import { columns } from './priority-list-columns';
 import { HlmDialogImports } from '@spartan-ng/helm/dialog';
+import { CdkObserveContent } from '@angular/cdk/observers';
+import { toast } from '@spartan-ng/brain/sonner';
 
 @Component({
   selector: 'app-priority-list',
@@ -51,6 +53,7 @@ import { HlmDialogImports } from '@spartan-ng/helm/dialog';
     NgClass,
     AsyncPipe,
     HlmDialogImports,
+    CdkObserveContent,
   ],
   templateUrl: './priority-list.html',
   styleUrl: './priority-list.scss',
@@ -86,6 +89,7 @@ export class PriorityList implements OnInit, OnDestroy {
   }
 
   isLoading = signal(false);
+  isSaving = signal(false);
   totalCount = signal(0);
   priorityGrouped = signal<PriorityGroup[]>([]);
   totalEdited = computed(() =>
@@ -119,11 +123,14 @@ export class PriorityList implements OnInit, OnDestroy {
   onColumnResize(columnKey: string, width: number): void {
     this.columnWidths.update((prev) => ({ ...prev, [columnKey]: width }));
   }
-
-  ngOnInit(): void {
+  private _loadPriorityGroups(): void {
+    this.isLoading.set(true);
     this.service
       .getPriorityGroups()
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoading.set(false)),
+      )
       .subscribe((res) => {
         this.priorityGrouped.set(res);
         combineLatest(this.priorityGrouped().map((group) => group.dataSource.totalCount$))
@@ -141,6 +148,10 @@ export class PriorityList implements OnInit, OnDestroy {
             }
           });
       });
+  }
+
+  ngOnInit(): void {
+    this._loadPriorityGroups();
   }
   toggleExpand(group: PriorityGroup, viewport: CdkVirtualScrollViewport): void {
     // const key = String(r1);
@@ -292,7 +303,52 @@ export class PriorityList implements OnInit, OnDestroy {
     entry.dataSource.undoEdit(entry.index, entry.data, entry.field, entry.previousValue);
   }
 
-  /** To update the  */
+  /** Find the data source and index for a given edited item by id */
+  private findDataSourceForItem(item: PriorityData): {
+    dataSource: PriorityListDataSource;
+    index: number;
+  } | null {
+    if (!item) return null;
+    for (const group of this.priorityGrouped()) {
+      const index = group.dataSource.findIndexById(item.id);
+      if (index !== -1) {
+        return { dataSource: group.dataSource, index };
+      }
+    }
+    return null;
+  }
+
+  /** Edit a number field from the dialog */
+  editDialogNumberItem(row: PriorityData, field: keyof Priority, value: string): void {
+    if (!row) return;
+    const result = this.findDataSourceForItem(row);
+    if (!result) return;
+    const { dataSource, index } = result;
+    const previousValue = row[field];
+    const parsed = parseInt(value);
+    if (isNaN(parsed)) {
+      dataSource.editItem(index, row, field, null);
+    } else {
+      dataSource.editItem(index, row, field, parsed);
+    }
+    this.undoStack.push({ dataSource, index, data: row, field, previousValue });
+  }
+
+  /** Edit a boolean field from the dialog */
+  editDialogBooleanItem(row: PriorityData, field: keyof Priority, value: boolean): void {
+    if (!row) return;
+    const result = this.findDataSourceForItem(row);
+    if (!result) return;
+    const { dataSource, index } = result;
+    const previousValue = row[field];
+    dataSource.editItem(index, row, field, Boolean(value));
+    this.undoStack.push({ dataSource, index, data: row, field, previousValue });
+  }
+
+  /**
+   * To update the x scroll position of virtual scroll viewports, to makesure the vertical scrollbar always display at the right side
+   * Without affects by the parent container horizontal scroll
+   */
   onGridScroll(event: Event): void {
     const el = event.target as HTMLElement;
     const scrollLeft = el.scrollLeft;
@@ -302,5 +358,29 @@ export class PriorityList implements OnInit, OnDestroy {
     wrappers.forEach((wrapper) => {
       wrapper.style.left = `${-scrollLeft}px`;
     });
+  }
+
+  saveChanges(): void {
+    const edited = this.editedItems();
+    if (edited.length === 0) {
+      toast.info('No changes to save');
+      return;
+    }
+    this.isSaving.set(true);
+    this.service
+      .saveChanges(edited)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isSaving.set(false);
+        }),
+      )
+      .subscribe(() => {
+        toast.success('Changes saved successfully');
+        // Clear undo stack after successful save
+        this.undoStack.length = 0;
+        // Reload data after successful save
+        this._loadPriorityGroups();
+      });
   }
 }
