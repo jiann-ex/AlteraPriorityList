@@ -287,6 +287,19 @@ export class PriorityList implements OnInit, OnDestroy {
     }
     this.undoStack.push({ dataSource, index, data, field, previousValue });
   }
+  editStringitem(
+    dataSource: PriorityListDataSource,
+    index: number,
+    data: PriorityData,
+    field: keyof Priority,
+    value: string,
+  ): void {
+    if (!data) return;
+    const previousValue = data[field];
+    const parsed = String(value);
+    dataSource.editItem(index, data, field, parsed);
+    this.undoStack.push({ dataSource, index, data, field, previousValue });
+  }
   editBooleanItem(
     dataSource: PriorityListDataSource,
     index: number,
@@ -335,6 +348,16 @@ export class PriorityList implements OnInit, OnDestroy {
     } else {
       dataSource.editItem(index, row, field, parsed);
     }
+    this.undoStack.push({ dataSource, index, data: row, field, previousValue });
+  }
+  editDialogStringItem(row: PriorityData, field: keyof Priority, value: string): void {
+    if (!row) return;
+    const result = this.findDataSourceForItem(row);
+    if (!result) return;
+    const { dataSource, index } = result;
+    const previousValue = row[field];
+    const parsed = String(value);
+    dataSource.editItem(index, row, field, parsed);
     this.undoStack.push({ dataSource, index, data: row, field, previousValue });
   }
 

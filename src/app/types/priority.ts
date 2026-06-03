@@ -42,8 +42,8 @@ export interface PriorityResponse {
   vpoStepStatus: number;
 }
 export interface PriorityPayload {
+  vpoStepIdToSetPriorityList: string[];
   vpoAssignPriorityInfoList: {
-    isPriority: boolean;
     priorityR1: NullableNumber;
     priorityR2: NullableNumber;
     vpoStepId: string;
@@ -96,7 +96,7 @@ export const priorityToMaps = new Map<keyof Priority, keyof PriorityResponse>([
   ['locationCode', 'locationCode'],
   ['vpoSource', 'vpoSource'],
   ['vpoDescription', 'vpoDescription'],
-  ['stepSequence', 'stepSeqDisplay'],
+  ['stepSequence', 'stepSeq'],
   ['step', 'step'],
   ['engineerName', 'engineerName'],
   ['stepComment', 'stepComment'],
@@ -152,15 +152,15 @@ export const mapPriorityFrom = (data: PriorityResponse): Priority =>
 /** Map from Priority to API request */
 export const mapPriorityPayload = (priority: Priority[]): PriorityPayload =>
   ({
+    vpoStepIdToSetPriorityList: priority.filter((x) => x.priority).map((x) => x.id),
     vpoAssignPriorityInfoList: priority.map((p) => ({
-      isPriority: p.priority,
       priorityR1: p.r1,
       priorityR2: p.r2,
-      vpoStepId: p.vpo,
+      vpoStepId: p.id,
       equipmentFreeText: p.equipment,
       comment: p.stepComment,
     })),
-  }) as any;
+  }) as PriorityPayload;
 /**
  * null should display placeholder wait for it to be loaded
  */

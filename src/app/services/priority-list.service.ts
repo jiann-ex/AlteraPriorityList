@@ -121,6 +121,13 @@ export class PriorityListService {
   }
 
   getPriorityListByGroup(r1: number | null, query: PriorityQuery): Observable<PagedList<Priority>> {
+    // Map key to priority response keys
+    query.sort = query.sort ? priorityToMaps.get(query.sort as keyof Priority) : undefined;
+    query.filters = query.filters?.map((filter) => ({
+      ...filter,
+      key: priorityToMaps.get(filter.key as keyof Priority) ?? filter.key,
+    }));
+
     if (!USE_MOCK) {
       let params = new HttpParams();
       if (r1) {
@@ -134,14 +141,6 @@ export class PriorityListService {
     }
 
     // --- MOCK: simulate server delay with 10k test data ---
-
-    // Map key to priority response keys
-    query.sort = query.sort ? priorityToMaps.get(query.sort as keyof Priority) : undefined;
-    query.filters = query.filters?.map((filter) => ({
-      ...filter,
-      key: priorityToMaps.get(filter.key as keyof Priority) ?? filter.key,
-    }));
-
     const filtered = MOCK_DATA.slice()
       .filter((item) => item.priorityR1 === r1)
       .filter((item) => {
@@ -259,6 +258,10 @@ export class PriorityListService {
   saveChanges(editedPriorities: Priority[]): Observable<void> {
     const payload = mapPriorityPayload(editedPriorities);
     console.log('Saving changes with payload:', payload);
+    if (!USE_MOCK) {
+      return this.httpClient.patch<void>(`${this.apiUrl}/api/mes/vpoPriority`, payload, {});
+    }
+
     // --- MOCK: Simulate API call and response ---
     return of(undefined).pipe(
       delay(500), // Simulate network delay

@@ -84,6 +84,18 @@
                             (ngModelChange)="editDialogNumberItem(row, col.key, $event)"
                           ></div>
                         }
+                        @case ('equipment')
+                        @case ('stepComment') {
+                          <div
+                            gridTableCellInput
+                            (activated)="gridActive()"
+                            [rowIndex]="rowIndex"
+                            [colIndex]="colIndex"
+                            [class]="col.class ?? ''"
+                            [ngModel]="row[col.key]"
+                            (ngModelChange)="editDialogStringItem(row, col.key, $event)"
+                          ></div>
+                        }
                         @default {
                           <div
                             gridTableCell
@@ -259,6 +271,20 @@
                       [ngModel]="row[col.key]"
                       (ngModelChange)="
                         editNumberItem(group.dataSource, rowIndex, row, col.key, $event)
+                      "
+                    ></div>
+                  }
+                  @case ('equipment')
+                  @case ('stepComment') {
+                    <div
+                      gridTableCellInput
+                      (activated)="gridActive()"
+                      [rowIndex]="rowIndex"
+                      [colIndex]="colIndex"
+                      [class]="col.class ?? ''"
+                      [ngModel]="row[col.key]"
+                      (ngModelChange)="
+                        editStringitem(group.dataSource, rowIndex, row, col.key, $event)
                       "
                     ></div>
                   }
