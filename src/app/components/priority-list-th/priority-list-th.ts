@@ -103,6 +103,8 @@ export class PriorityListTh implements OnInit {
   widthChange = output<number>();
   searchTerm = signal<string | null>(null);
   blank = signal(false);
+  /** When true, the filter only allows free-text search instead of selectable options */
+  protected readonly isSearchOnly = computed(() => this.column().searchOnly ?? false);
 
   private readonly _dropdownMenuHost: HlmDropdownMenuTrigger = inject(HlmDropdownMenuTrigger, {
     host: true,
@@ -122,6 +124,11 @@ export class PriorityListTh implements OnInit {
     this._dropdownMenuHost.opened.pipe(takeUntilDestroyed(this._destroyRef)).subscribe(() => {
       //this.scrollTop.set(0);
     });
+
+    // Search-only columns filter by free-text term and don't load selectable options
+    if (this.isSearchOnly()) {
+      return;
+    }
 
     this.dataSource = new PriorityFilterOptionsDataSource(
       this.priorityListService,
@@ -187,6 +194,11 @@ export class PriorityListTh implements OnInit {
 
   onSearchInput(value: string): void {
     this.searchTerm.set(value);
+    // For search-only columns there is no option list to filter,
+    // the term itself is applied as the filter on Apply.
+    if (this.isSearchOnly()) {
+      return;
+    }
     // Debounce the search input to avoid too many requests
     if (this._searchTimeout) {
       clearTimeout(this._searchTimeout);

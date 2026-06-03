@@ -23,7 +23,7 @@
         "
       ></ng-icon>
     </button>
-    @if (blank() || selectedOptions().size > 0) {
+    @if (blank() || selectedOptions().size > 0 || (isSearchOnly() && searchTerm())) {
       <button
         class="cursor-pointer"
         hlmBtn
@@ -65,21 +65,25 @@
     <hlm-dropdown-menu-group>
       <hlm-dropdown-menu-label>
         Filters
-        <hlm-dropdown-menu-shortcut>
-          ({{ selectedOptions().size }} selected)
-        </hlm-dropdown-menu-shortcut>
+        @if (!isSearchOnly()) {
+          <hlm-dropdown-menu-shortcut>
+            ({{ selectedOptions().size }} selected)
+          </hlm-dropdown-menu-shortcut>
+        }
       </hlm-dropdown-menu-label>
-      <button
-        hlmDropdownMenuItem
-        [variant]="'destructive'"
-        [disabled]="selectedOptions().size === 0"
-        (triggered)="clearSelect()"
-      >
-        Clear All
-        <hlm-dropdown-menu-shortcut>
-          <ng-icon class="text-red-500" name="lucideTrash"></ng-icon>
-        </hlm-dropdown-menu-shortcut>
-      </button>
+      @if (!isSearchOnly()) {
+        <button
+          hlmDropdownMenuItem
+          [variant]="'destructive'"
+          [disabled]="selectedOptions().size === 0"
+          (triggered)="clearSelect()"
+        >
+          Clear All
+          <hlm-dropdown-menu-shortcut>
+            <ng-icon class="text-red-500" name="lucideTrash"></ng-icon>
+          </hlm-dropdown-menu-shortcut>
+        </button>
+      }
       <button hlmDropdownMenuItem (triggered)="applyFilter()">
         <ng-icon name="lucideCheckCheck"></ng-icon>
         <span>Apply</span>
@@ -87,44 +91,46 @@
       <div class="my-1">
         <input
           hlmInput
-          placeholder="Search options"
+          [placeholder]="isSearchOnly() ? 'Search term' : 'Search options'"
           [ngModel]="searchTerm()"
           (ngModelChange)="onSearchInput($event)"
           (keydown)="$event.stopPropagation()"
         />
       </div>
-      <button hlmDropdownMenuCheckbox keepOpen [checked]="blank()" (triggered)="toggleBlank()">
-        <hlm-dropdown-menu-checkbox-indicator />
-        <span class="text-nowrap text-ellipsis overflow-hidden">BLANK</span>
-      </button>
-      @if (dataSource.isEmpty$ | async) {
-        <div class="p-4 text-center text-sm text-muted-foreground">No options found</div>
+      @if (!isSearchOnly()) {
+        <button hlmDropdownMenuCheckbox keepOpen [checked]="blank()" (triggered)="toggleBlank()">
+          <hlm-dropdown-menu-checkbox-indicator />
+          <span class="text-nowrap text-ellipsis overflow-hidden">BLANK</span>
+        </button>
+        @if (dataSource.isEmpty$ | async) {
+          <div class="p-4 text-center text-sm text-muted-foreground">No options found</div>
+        }
+        <cdk-virtual-scroll-viewport
+          [style.height.px]="viewportHeight()"
+          [itemSize]="32"
+          [minBufferPx]="320"
+          [maxBufferPx]="620"
+          (focusout)="$event.stopPropagation()"
+        >
+          <ng-container *cdkVirtualFor="let option of dataSource">
+            @if (option) {
+              <button
+                hlmDropdownMenuCheckbox
+                keepOpen
+                [checked]="selectedOptions().has(option)"
+                (triggered)="toggleOption(option)"
+              >
+                <hlm-dropdown-menu-checkbox-indicator />
+                <span class="text-nowrap text-ellipsis overflow-hidden">{{ option }}</span>
+              </button>
+            } @else {
+              <div class="h-8 px-2">
+                <hlm-skeleton class="h-6 w-full" />
+              </div>
+            }
+          </ng-container>
+        </cdk-virtual-scroll-viewport>
       }
-      <cdk-virtual-scroll-viewport
-        [style.height.px]="viewportHeight()"
-        [itemSize]="32"
-        [minBufferPx]="320"
-        [maxBufferPx]="620"
-        (focusout)="$event.stopPropagation()"
-      >
-        <ng-container *cdkVirtualFor="let option of dataSource">
-          @if (option) {
-            <button
-              hlmDropdownMenuCheckbox
-              keepOpen
-              [checked]="selectedOptions().has(option)"
-              (triggered)="toggleOption(option)"
-            >
-              <hlm-dropdown-menu-checkbox-indicator />
-              <span class="text-nowrap text-ellipsis overflow-hidden">{{ option }}</span>
-            </button>
-          } @else {
-            <div class="h-8 px-2">
-              <hlm-skeleton class="h-6 w-full" />
-            </div>
-          }
-        </ng-container>
-      </cdk-virtual-scroll-viewport>
       <!-- Lightweight virtual scroll (no nested cdk-virtual-scroll-viewport) -->
       <!-- <div
         class="relative overflow-y-auto"
