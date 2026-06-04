@@ -101,7 +101,8 @@ export class PriorityList implements OnInit, OnDestroy {
     this.priorityGrouped().flatMap((group) => group.dataSource.editedItems()),
   );
 
-  groupExpanded = signal<Record<string, boolean>>({});
+  /** Group expand/collapse state is owned by the menu service so it persists to localStorage */
+  protected readonly groupExpanded = this.menuService.groupExpanded;
 
   sortColumn = signal<string | null>(null);
   sortDirection = signal<SortDirection>(null);
@@ -161,12 +162,8 @@ export class PriorityList implements OnInit, OnDestroy {
     this._loadPriorityGroups();
   }
   toggleExpand(group: PriorityGroup, viewport: CdkVirtualScrollViewport): void {
-    // const key = String(r1);
-    // const expanded = this.groupExpanded()[key] ?? false;
-    // this.groupExpanded.update((prev) => ({ ...prev, [key]: !expanded }));
-
-    // this.groupExpanded()[group.r1 ?? -1] = !this.groupExpanded()[group.r1 ?? -1];
-    this.groupExpanded.update((prev) => ({ ...prev, [group.key]: !(prev[group.key] ?? false) }));
+    // Persisted by the menu service so the expand/collapse state survives a refresh
+    this.menuService.toggleGroupExpanded(group.key);
     const isNowExpanded = this.groupExpanded()[group.key];
     // After toggling the group, we need to manually trigger the viewport to check the new range and fetch data if needed
     //viewport.scrollToIndex(0); // Scroll to top to trigger data fetch for the newly expanded group

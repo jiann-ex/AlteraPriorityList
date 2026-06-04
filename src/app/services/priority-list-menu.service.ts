@@ -12,6 +12,8 @@ const COLUMNS_STORAGE_KEY = 'PriorityListColumnsSaved';
 const COLUMN_WIDTHS_STORAGE_KEY = 'PriorityListColumnWidthsSaved';
 /** LocalStorage key for the persisted column order (array of column keys) */
 const COLUMN_ORDER_STORAGE_KEY = 'PriorityListColumnOrderSaved';
+/** LocalStorage key for the persisted group expand/collapse state, keyed by group key */
+const GROUP_EXPANDED_STORAGE_KEY = 'PriorityListGroupExpandedSaved';
 
 /**
  * Meant to be used as a shared service for the priority list menu,
@@ -35,6 +37,9 @@ export class PriorityListMenuService {
   /** Persisted column widths keyed by column key */
   readonly columnWidths = signal<Record<string, number>>(this._loadWidths());
 
+  /** Persisted group expand/collapse state keyed by group key */
+  readonly groupExpanded = signal<Record<string, boolean>>(this._loadGroupExpanded());
+
   /** Columns currently visible, preserving the original column order */
   readonly visibleColumns = computed(() =>
     this.columns().filter((c) => this.isColumnVisible(c.key)),
@@ -50,6 +55,7 @@ export class PriorityListMenuService {
         this.columns().map((c) => c.key),
       ),
     );
+    effect(() => this._writeJson(GROUP_EXPANDED_STORAGE_KEY, this.groupExpanded()));
   }
 
   reload() {
@@ -82,6 +88,16 @@ export class PriorityListMenuService {
     this.columns.set(columns);
   }
 
+  /** A group is collapsed unless explicitly expanded */
+  isGroupExpanded(key: string): boolean {
+    return this.groupExpanded()[key] === true;
+  }
+
+  /** Toggle a group's expand/collapse state; persisted to localStorage */
+  toggleGroupExpanded(key: string): void {
+    this.groupExpanded.update((prev) => ({ ...prev, [key]: !this.isGroupExpanded(key) }));
+  }
+
   private _loadColumns(): ColumnDef[] {
     const savedOrder = this._readJson<string[]>(COLUMN_ORDER_STORAGE_KEY);
     if (!savedOrder) return ALL_COLUMNS;
@@ -111,6 +127,10 @@ export class PriorityListMenuService {
     const defaults = createColumnWidths(ALL_COLUMNS.map((c) => c.key));
     const stored = this._readJson<Record<string, number>>(COLUMN_WIDTHS_STORAGE_KEY);
     return { ...defaults, ...(stored ?? {}) };
+  }
+
+  private _loadGroupExpanded(): Record<string, boolean> {
+    return this._readJson<Record<string, boolean>>(GROUP_EXPANDED_STORAGE_KEY) ?? {};
   }
 
   private _readJson<T>(key: string): T | null {
