@@ -1,13 +1,16 @@
 <hlm-menubar>
-  <button [hlmMenubarTrigger]="columnsMenu">Columns</button>
+  <button [hlmMenubarTrigger]="columnsMenu">Columns Visibility</button>
 </hlm-menubar>
 
 <ng-template #columnsMenu>
   <hlm-dropdown-menu class="max-h-96 overflow-y-auto">
-    <hlm-dropdown-menu-label>Toggle columns</hlm-dropdown-menu-label>
-    <hlm-dropdown-menu-separator />
     @for (column of columns(); track column.key) {
-      <button hlmDropdownMenuCheckbox keepOpen [checked]="isColumnVisible(column.key)" (triggered)="toggleColumn(column)">
+      <button
+        hlmDropdownMenuCheckbox
+        keepOpen
+        [checked]="isColumnVisible(column.key)"
+        (triggered)="toggleColumn(column)"
+      >
         <hlm-dropdown-menu-checkbox-indicator />
         <span class="text-nowrap text-ellipsis overflow-hidden">{{ column.label }}</span>
       </button>
