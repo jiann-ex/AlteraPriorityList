@@ -1,6 +1,6 @@
 import { CollectionViewer, DataSource, ListRange } from '@angular/cdk/collections';
 import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize, takeUntil, tap } from 'rxjs/operators';
 import { Priority } from '../types/priority';
 import { Filter, PriorityListService, PriorityQuery, Query } from './priority-list.service';
 import type { PriorityData } from '../types';
@@ -196,6 +196,12 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
    */
   empty(): void {
     this.data?.next([]);
+    // Stop any in-flight loading indicator when collapsing. This runs from the
+    // collapse click handler (before change detection), so the subsequent
+    // teardown of the in-flight request (finalize -> loading.next(false)) no
+    // longer flips `loading` in the middle of a CD pass, which previously
+    // surfaced as ExpressionChangedAfterItHasBeenCheckedError.
+    //this.loading.next(false);
   }
 
   sort(column: string | null, direction: 'asc' | 'desc' | null): void {
@@ -258,14 +264,22 @@ export class PriorityListDataSource extends DataSource<PriorityData> {
       filters: this._filters.length > 0 ? this._filters : undefined,
     };
 
+    let success = false;
     this.service
       .getPriorityListByGroup(this.groupKey, query)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.loading.next(false)),
+        finalize(() => {
+          // Incase not success or cnacel, remove the fetched
+          if (!success) {
+            this.fetched.delete(range);
+          }
+          this.loading.next(false);
+        }),
       )
       .subscribe({
         next: (response) => {
+          success = true;
           const total = response.count;
           this.totalCount.next(total);
 

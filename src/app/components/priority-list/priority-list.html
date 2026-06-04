@@ -212,7 +212,7 @@
             ></ng-icon>
             <span>{{ group.r1 ?? 'No Priority' }}</span>
             <span>({{ group.total }})</span>
-            @if (group.dataSource.loading$ | async) {
+            @if (groupExpanded()[group.key] && (group.dataSource.loading$ | async)) {
               <hlm-spinner size="sm" /> <span class="text-muted-foreground">Fetching data...</span>
             }
           </div>
