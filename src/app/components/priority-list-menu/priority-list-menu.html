@@ -1,5 +1,6 @@
 <hlm-menubar>
   <button [hlmMenubarTrigger]="columnsMenu">Columns Visibility</button>
+  <button [hlmMenubarTrigger]="exportMenu">Export</button>
 </hlm-menubar>
 
 <ng-template #columnsMenu>
@@ -17,3 +18,36 @@
     }
   </hlm-dropdown-menu>
 </ng-template>
+<ng-template #exportMenu>
+  <hlm-dropdown-menu>
+    <button hlmDropdownMenuItem (click)="exportDialog.open()">Export Excel</button>
+  </hlm-dropdown-menu>
+</ng-template>
+
+<!--
+  The alert dialog lives at the component root (not inside the dropdown's
+  ng-template). If it were nested in the dropdown, closing the dropdown on item
+  click would tear down the dialog content's change-detection link, leaving the
+  exporting() loading/disabled state frozen even though the overlay stays on
+  screen. Keeping it here ties its lifecycle to the always-alive component view.
+-->
+<hlm-alert-dialog #exportDialog="hlmAlertDialog">
+  <hlm-alert-dialog-content *hlmAlertDialogPortal="let ctx">
+    <hlm-alert-dialog-header>
+      <h2 hlmAlertDialogTitle>Export as Excel</h2>
+      <p hlmAlertDialogDescription>Please click download and wait for the export finish</p>
+    </hlm-alert-dialog-header>
+    <hlm-alert-dialog-footer>
+      <button hlmBtn variant="secondary" [disabled]="exporting()" (click)="ctx.close()">
+        Cancel
+      </button>
+      <button hlmBtn [disabled]="exporting()" (click)="exportExcel(ctx)">
+        @if (exporting()) {
+          <hlm-spinner size="sm" /> Downloading...
+        } @else {
+          Download
+        }
+      </button>
+    </hlm-alert-dialog-footer>
+  </hlm-alert-dialog-content>
+</hlm-alert-dialog>

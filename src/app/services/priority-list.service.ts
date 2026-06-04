@@ -309,4 +309,17 @@ export class PriorityListService {
       }),
     );
   }
+
+  exportExcel() {
+    // Observe the full response so the filename can be read from the
+    // Content-Disposition header (the body alone does not expose headers).
+    return this.httpClient.post(
+      `${environment.apiUrl}/api/mes/vpoPriority/generateExcel`,
+      {},
+      {
+        observe: 'response',
+        responseType: 'blob',
+      },
+    );
+  }
 }
