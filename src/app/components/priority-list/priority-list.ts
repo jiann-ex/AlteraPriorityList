@@ -20,7 +20,6 @@ import type { ColumnDef } from '../../types/column-def';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { PriorityData, SortDirection } from '@app-types';
 import { FilterState, PriorityListTh } from '../priority-list-th/priority-list-th';
-import { createColumnWidths } from '../priority-list-th';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { GridTableImports } from '../grid-table/grid-table';
 import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
@@ -29,11 +28,11 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCircleChevronDown, lucideCircleChevronRight, lucideBox } from '@ng-icons/lucide';
 import { PriorityListDataSource } from '../../services/priority-list-datasource';
 import { AsyncPipe, NgClass } from '@angular/common';
-import { columns } from './priority-list-columns';
 import { HlmDialogImports } from '@spartan-ng/helm/dialog';
 import { CdkObserveContent } from '@angular/cdk/observers';
 import { toast } from '@spartan-ng/brain/sonner';
 import { HlmEmptyImports } from '@spartan-ng/helm/empty';
+import { PriorityListMenuService } from '../../services/priority-list-menu.service';
 
 @Component({
   selector: 'app-priority-list',
@@ -71,6 +70,7 @@ import { HlmEmptyImports } from '@spartan-ng/helm/empty';
 })
 export class PriorityList implements OnInit, OnDestroy {
   private readonly service = inject(PriorityListService);
+  private readonly menuService = inject(PriorityListMenuService);
   private readonly destroy$ = new Subject<void>();
 
   /** Undo stack to track all edits for Ctrl+Z */
@@ -110,20 +110,25 @@ export class PriorityList implements OnInit, OnDestroy {
 
   filters = signal<Filter[]>([]);
 
-  protected readonly columns = signal<ColumnDef[]>(columns);
+  /** Full ordered list of columns (includes hidden ones), owned by the menu service so order persists */
+  protected readonly columns = this.menuService.columns;
 
-  columnWidths = signal<Record<string, number>>(
-    createColumnWidths(this.columns().map((c) => c.key)),
-  );
+  /** Only the columns the user chose to display, in order. Reflects the menu toggles. */
+  protected readonly visibleColumns = computed(() => {
+    return this.columns().filter((col) => this.menuService.isColumnVisible(col.key));
+  });
+
+  /** Column widths are owned by the menu service so they persist to localStorage */
+  protected readonly columnWidths = this.menuService.columnWidths;
 
   gridTemplateColumns = computed(() => {
     const widths = this.columnWidths();
-    const columns = this.columns();
+    const columns = this.visibleColumns();
     return columns.map((col) => `${widths[col.key]}px`).join(' ');
   });
 
   onColumnResize(columnKey: string, width: number): void {
-    this.columnWidths.update((prev) => ({ ...prev, [columnKey]: width }));
+    this.menuService.setColumnWidth(columnKey, width);
   }
   private _loadPriorityGroups(): void {
     this.isLoading.set(true);
@@ -197,9 +202,14 @@ export class PriorityList implements OnInit, OnDestroy {
   }
 
   dropColumn(event: CdkDragDrop<ColumnDef[]>) {
-    const columns = this.columns();
-    moveItemInArray(columns, event.previousIndex, event.currentIndex);
-    this.columns.set(columns.splice(0)); // Trigger change detection
+    // The header only renders the visible columns, so the drag indices are
+    // relative to those. Translate them back to the full ordered list.
+    const visible = this.visibleColumns();
+    const moved = visible[event.previousIndex];
+    const target = visible[event.currentIndex];
+    const columns = [...this.columns()];
+    moveItemInArray(columns, columns.indexOf(moved), columns.indexOf(target));
+    this.menuService.setColumns(columns); // Persist the new order and trigger change detection
   }
 
   gridActive() {
