@@ -205,13 +205,12 @@ export class PriorityListService {
     term: string | null,
   ): Observable<PagedList<string>> {
     if (!USE_MOCK) {
-      const params = new HttpParams()
+      let params = new HttpParams()
         .set('key', prop)
         .set('offset', String(query.offset))
         .set('limit', String(query.limit));
-
       if (term) {
-        params.set('term', term);
+        params = params.set('term', term);
       }
       return this.httpClient.post<PagedList<string>>(
         `${this.apiUrl}/api/mes/vpoPriority/options`,
