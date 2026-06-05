@@ -9,6 +9,9 @@
     <button hlmDropdownMenuItem (triggered)="expandAll()">Expand All</button>
     <button hlmDropdownMenuItem (triggered)="collapseAll()">Collapse All</button>
     <button hlmDropdownMenuItem (triggered)="reload()">Reload</button>
+    <button hlmDropdownMenuItem variant="destructive" (triggered)="clearAllFilters()">
+      Clear All Filter
+    </button>
   </hlm-dropdown-menu>
 </ng-template>
 <ng-template #columnsMenu>

@@ -241,9 +241,18 @@ export class PriorityListTh implements OnInit {
     if (event) {
       event.stopPropagation();
     }
+    this.resetFilterState();
+    this.filter.emit(null);
+  }
+
+  /**
+   * Reset this column's filter UI (search term, blank toggle, selected options)
+   * without emitting. Used by the menu's "Clear all filters" so the parent can
+   * re-apply the cleared filter/sort to every group's data source just once.
+   */
+  resetFilterState(): void {
     this.blank.set(false);
     this.searchTerm.set(null);
     this.selectedOptions.set(new Set());
-    this.filter.emit(null);
   }
 }

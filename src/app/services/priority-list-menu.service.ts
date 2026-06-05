@@ -3,7 +3,7 @@ import { columns as ALL_COLUMNS } from '../components/priority-list/priority-lis
 import { createColumnWidths } from '../components/priority-list-th/create-column-widths';
 import type { ColumnDef } from '../types/column-def';
 
-export type PriorityListMenuEvent = 'reload' | 'expandAll' | 'collapseAll';
+export type PriorityListMenuEvent = 'reload' | 'expandAll' | 'collapseAll' | 'clearAllFilters';
 export type EventCallback<T> = (event: PriorityListMenuEvent, payload?: T) => void;
 
 /** LocalStorage key for the column visibility map */
@@ -66,6 +66,10 @@ export class PriorityListMenuService {
   }
   collapseAll() {
     this._emitEvent('collapseAll');
+  }
+  /** Clear every column's filter (search term / selected options) and reset all sorts */
+  clearAllFilters() {
+    this._emitEvent('clearAllFilters');
   }
 
   /** A column is visible unless explicitly hidden */

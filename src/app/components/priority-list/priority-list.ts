@@ -82,6 +82,9 @@ export class PriorityList implements OnInit, OnDestroy {
   /** The per-group virtual-scroll viewports (tagged with #cdkViewport in the template) */
   private readonly groupViewports = viewChildren('cdkViewport', { read: CdkVirtualScrollViewport });
 
+  /** The column header cells, used to reset their filter UI on "Clear all filters" */
+  private readonly columnHeaders = viewChildren(PriorityListTh);
+
   /** Handles menu events (expand all / collapse all / reload) emitted by the menu service */
   private readonly _menuListener: EventCallback<unknown> = (event) => {
     switch (event) {
@@ -93,6 +96,9 @@ export class PriorityList implements OnInit, OnDestroy {
         break;
       case 'reload':
         this._loadPriorityGroups();
+        break;
+      case 'clearAllFilters':
+        this._clearAllFilters();
         break;
     }
   };
@@ -337,6 +343,28 @@ export class PriorityList implements OnInit, OnDestroy {
 
     this.priorityGrouped().forEach((group) => {
       group.dataSource.filter(this.filters());
+    });
+  }
+
+  /**
+   * Clear every column's filter and reset all sorting (driven by the menu's
+   * "Clear all filters"). Resets each header's filter UI, clears the parent
+   * filter/sort state, then re-applies the now-empty filter/sort to every
+   * group's data source once.
+   */
+  private _clearAllFilters(): void {
+    // Reset each column header's filter UI (search term, selected options, blank toggle)
+    for (const header of this.columnHeaders()) {
+      header.resetFilterState();
+    }
+
+    this.filters.set([]);
+    this.sortColumn.set(null);
+    this.sortDirection.set(null);
+
+    this.priorityGrouped().forEach((group) => {
+      group.dataSource.filter(this.filters());
+      group.dataSource.sort(this.sortColumn(), this.sortDirection());
     });
   }
 

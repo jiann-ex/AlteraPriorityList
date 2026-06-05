@@ -45,6 +45,9 @@ export class PriorityListMenu {
   protected reload() {
     this.menuService.reload();
   }
+  protected clearAllFilters() {
+    this.menuService.clearAllFilters();
+  }
 
   protected exportExcel(ctx: any) {
     this.exporting.set(true);
