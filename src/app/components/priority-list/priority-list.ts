@@ -238,7 +238,7 @@ export class PriorityList implements OnInit, OnDestroy {
     }
     // Empty group: keep room for the "No Data Found" placeholder
     if (group.total <= 0) {
-      return MAX_PX;
+      return HEADER_PX;
     }
     return Math.min(MAX_PX, HEADER_PX + group.total * ROW_PX);
   }
