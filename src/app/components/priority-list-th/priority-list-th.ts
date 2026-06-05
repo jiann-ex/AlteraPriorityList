@@ -103,6 +103,8 @@ export class PriorityListTh implements OnInit {
   widthChange = output<number>();
   searchTerm = signal<string | null>(null);
   blank = signal(false);
+  /** True only once a filter has been applied (via Apply), used to show the clear-filter button */
+  protected readonly hasActiveFilter = signal(false);
   /** When true, the filter only allows free-text search instead of selectable options */
   protected readonly isSearchOnly = computed(() => this.column().searchOnly ?? false);
 
@@ -230,6 +232,7 @@ export class PriorityListTh implements OnInit {
       return;
     }
 
+    this.hasActiveFilter.set(true);
     this.filter.emit({
       includeBlank: this.blank(),
       searchTerm: this.searchTerm(),
@@ -254,5 +257,6 @@ export class PriorityListTh implements OnInit {
     this.blank.set(false);
     this.searchTerm.set(null);
     this.selectedOptions.set(new Set());
+    this.hasActiveFilter.set(false);
   }
 }

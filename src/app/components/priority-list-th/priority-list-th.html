@@ -23,7 +23,7 @@
         "
       ></ng-icon>
     </button>
-    @if (blank() || selectedOptions().size > 0 || (isSearchOnly() && searchTerm())) {
+    @if (hasActiveFilter()) {
       <button
         class="cursor-pointer"
         hlmBtn
