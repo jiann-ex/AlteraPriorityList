@@ -137,12 +137,12 @@
 </div>
 
 <div
-  class="overflow-x-auto"
+  class="overflow-auto max-h-[calc(100dvh-6rem)]"
   gridTable
   [style.grid-template-columns]="gridTemplateColumns() + ' minmax(0, 1fr)'"
   (scroll)="onGridScroll($event)"
 >
-  <div gridTableHeader>
+  <div gridTableHeader sticky>
     <div
       gridTableRow
       cdkDropList

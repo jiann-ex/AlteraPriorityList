@@ -1,27 +1,35 @@
 :host {
-  container-type: inline-size;
-}
+  // The grid table is the scroll container (vertical + horizontal). Make it the
+  // container-query context and reserve a stable scrollbar gutter, so `100cqi`
+  // below resolves to the *visible* width minus the table's own vertical
+  // scrollbar. Otherwise each group's pinned scrollbar would sit underneath the
+  // table's outer scrollbar and become unreachable.
+  [data-slot='grid-table'] {
+    container-type: inline-size;
+    scrollbar-gutter: stable;
+  }
 
-// Keep the vertical scrollbar always visible on the right side
-// by making the viewport sticky within the horizontal scroll container
-// This will make the horizontal scroll not working with the grid table
-// We just some javscript trick in the priority-list.ts to sync the horizontal scroll of the grid table and the viewport
-cdk-virtual-scroll-viewport.priority-group {
-  position: sticky !important;
-  left: 0;
-  width: 100cqi !important;
-  max-width: 100cqi !important;
-  min-width: 0 !important;
-}
+  // Keep the vertical scrollbar always visible on the right side
+  // by making the viewport sticky within the horizontal scroll container
+  // This will make the horizontal scroll not working with the grid table
+  // We just some javscript trick in the priority-list.ts to sync the horizontal scroll of the grid table and the viewport
+  cdk-virtual-scroll-viewport.priority-group {
+    position: sticky !important;
+    left: 0;
+    width: 100cqi !important;
+    max-width: 100cqi !important;
+    min-width: 0 !important;
+  }
 
-.editable-cell {
-  cursor: text;
-  outline: none;
-  min-width: 2rem;
-  transition: box-shadow 0.15s;
+  .editable-cell {
+    cursor: text;
+    outline: none;
+    min-width: 2rem;
+    transition: box-shadow 0.15s;
 
-  &:focus {
-    box-shadow: inset 0 0 0 1.5px var(--ring);
-    border-radius: 2px;
+    &:focus {
+      box-shadow: inset 0 0 0 1.5px var(--ring);
+      border-radius: 2px;
+    }
   }
 }
