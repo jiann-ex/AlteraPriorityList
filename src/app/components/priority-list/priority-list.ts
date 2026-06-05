@@ -27,12 +27,15 @@ import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCircleChevronDown, lucideCircleChevronRight, lucideBox } from '@ng-icons/lucide';
 import { PriorityListDataSource } from '../../services/priority-list-datasource';
-import { AsyncPipe, NgClass } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { HlmDialogImports } from '@spartan-ng/helm/dialog';
-import { CdkObserveContent } from '@angular/cdk/observers';
 import { toast } from '@spartan-ng/brain/sonner';
 import { HlmEmptyImports } from '@spartan-ng/helm/empty';
 import { PriorityListMenuService } from '../../services/priority-list-menu.service';
+
+const HEADER_PX = 40; // sticky group header row (h-10)
+const ROW_PX = 40; // matches [itemSize]
+const MAX_PX = 320; // h-80 cap
 
 @Component({
   selector: 'app-priority-list',
@@ -50,7 +53,6 @@ import { PriorityListMenuService } from '../../services/priority-list-menu.servi
     HlmTooltipImports,
     HlmSkeletonImports,
     NgIcon,
-    NgClass,
     AsyncPipe,
     HlmDialogImports,
     HlmEmptyImports,
@@ -110,6 +112,8 @@ export class PriorityList implements OnInit, OnDestroy {
   testToggleTable = signal(false);
 
   filters = signal<Filter[]>([]);
+  /** Keep the viewport height dynamic based on item count */
+  groupHeights = signal<number[]>([]);
 
   /** Full ordered list of columns (includes hidden ones), owned by the menu service so order persists */
   protected readonly columns = this.menuService.columns;
@@ -154,6 +158,10 @@ export class PriorityList implements OnInit, OnDestroy {
                 return newGroups;
               });
             }
+            // Counts are now known/changed — recompute heights once here (honours
+            // the expand state restored from localStorage and any count change,
+            // e.g. after a filter). Not run per change-detection cycle.
+            this.groupHeights.set(this.priorityGrouped().map((g) => this._groupViewportHeight(g)));
           });
       });
   }
@@ -161,31 +169,42 @@ export class PriorityList implements OnInit, OnDestroy {
   ngOnInit(): void {
     this._loadPriorityGroups();
   }
-  toggleExpand(group: PriorityGroup, viewport: CdkVirtualScrollViewport): void {
+  /**
+   * Height (px) for a group's virtual-scroll viewport.
+   * - Collapsed: just the sticky group header row.
+   * - Expanded: grows with the number of rows but is capped at 320px (h-80),
+   *   so groups with few rows don't leave empty space below them.
+   */
+  private _groupViewportHeight(group: PriorityGroup): number {
+    if (!this.groupExpanded()[group.key]) {
+      return HEADER_PX;
+    }
+    // Empty group: keep room for the "No Data Found" placeholder
+    if (group.total <= 0) {
+      return MAX_PX;
+    }
+    return Math.min(MAX_PX, HEADER_PX + group.total * ROW_PX);
+  }
+
+  toggleExpand(group: PriorityGroup, viewport: CdkVirtualScrollViewport, index: number): void {
     // Persisted by the menu service so the expand/collapse state survives a refresh
     this.menuService.toggleGroupExpanded(group.key);
     const isNowExpanded = this.groupExpanded()[group.key];
+
+    // Recompute only the toggled group's viewport height. This is the only
+    // per-interaction recalculation — the template just reads groupHeights().
+    this.groupHeights.update((heights) => {
+      const next = [...heights];
+      next[index] = this._groupViewportHeight(group);
+      return next;
+    });
+
     // After toggling the group, we need to manually trigger the viewport to check the new range and fetch data if needed
-    //viewport.scrollToIndex(0); // Scroll to top to trigger data fetch for the newly expanded group
     viewport.checkViewportSize(); // Check if the viewport needs to fetch more data based on the new expanded state
     viewport.scrollToIndex(0); // Scroll to top to trigger data fetch for the newly expanded group
-    //this.priorityDataSources()[String(r1)]?.refresh(); // Refresh the data source for the group to fetch data if it's expanded
-    // Looks like reinitialize fix the issue it become empty after toggle
-    // this.priorityDataSources.update((prev) => {
-    //   const key = String(r1);
-    //   const ds = prev[key];
-    //   if (ds) {
-    //     ds.refresh();
-    //   }
-    //   //prev[key] = new PriorityListDataSource(this.service, r1);
-    //   return { ...prev };
-    // });
 
     if (!isNowExpanded) {
       group.dataSource.empty();
-      console.log('Clear the data source');
-    } else {
-      //group.dataSource.refresh();
     }
   }
   printDataSource(e: any): void {

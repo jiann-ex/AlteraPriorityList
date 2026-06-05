@@ -182,10 +182,7 @@
       <cdk-virtual-scroll-viewport
         gridTableBody
         class="priority-group overflow-x-hidden!"
-        [ngClass]="{
-          'h-80': groupExpanded()[group.key],
-          'h-10': !groupExpanded()[group.key],
-        }"
+        [style.height.px]="groupHeights()[groupIndex]"
         [itemSize]="40"
         [minBufferPx]="320"
         [maxBufferPx]="620"
@@ -196,7 +193,7 @@
           gridTableGroupRow
           sticky
           [expanded]="groupExpanded()[group.key]"
-          (toggled)="toggleExpand(group, cdkViewport)"
+          (toggled)="toggleExpand(group, cdkViewport, groupIndex)"
         >
           <div
             gridTableCell
