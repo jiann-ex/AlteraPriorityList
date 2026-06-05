@@ -1,11 +1,14 @@
 import {
+  afterNextRender,
   Component,
   computed,
   HostListener,
   inject,
+  Injector,
   OnDestroy,
   OnInit,
   signal,
+  viewChildren,
 } from '@angular/core';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
@@ -31,7 +34,7 @@ import { AsyncPipe } from '@angular/common';
 import { HlmDialogImports } from '@spartan-ng/helm/dialog';
 import { toast } from '@spartan-ng/brain/sonner';
 import { HlmEmptyImports } from '@spartan-ng/helm/empty';
-import { PriorityListMenuService } from '../../services/priority-list-menu.service';
+import { EventCallback, PriorityListMenuService } from '../../services/priority-list-menu.service';
 
 const HEADER_PX = 40; // sticky group header row (h-10)
 const ROW_PX = 40; // matches [itemSize]
@@ -73,7 +76,26 @@ const MAX_PX = 320; // h-80 cap
 export class PriorityList implements OnInit, OnDestroy {
   private readonly service = inject(PriorityListService);
   private readonly menuService = inject(PriorityListMenuService);
+  private readonly injector = inject(Injector);
   private readonly destroy$ = new Subject<void>();
+
+  /** The per-group virtual-scroll viewports (tagged with #cdkViewport in the template) */
+  private readonly groupViewports = viewChildren('cdkViewport', { read: CdkVirtualScrollViewport });
+
+  /** Handles menu events (expand all / collapse all / reload) emitted by the menu service */
+  private readonly _menuListener: EventCallback<unknown> = (event) => {
+    switch (event) {
+      case 'expandAll':
+        this._setAllGroupsExpanded(true);
+        break;
+      case 'collapseAll':
+        this._setAllGroupsExpanded(false);
+        break;
+      case 'reload':
+        this._loadPriorityGroups();
+        break;
+    }
+  };
 
   /** Undo stack to track all edits for Ctrl+Z */
   private readonly undoStack: {
@@ -167,7 +189,42 @@ export class PriorityList implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.menuService.registerListener(this._menuListener);
     this._loadPriorityGroups();
+  }
+
+  /**
+   * Expand or collapse every group at once (driven by the menu's Expand/Collapse All).
+   * Mirrors {@link toggleExpand} but applies one state to all groups.
+   */
+  private _setAllGroupsExpanded(expanded: boolean): void {
+    const groups = this.priorityGrouped();
+
+    // Persist the new expand state for all groups in one go
+    this.menuService.setGroupsExpanded(
+      groups.map((g) => g.key),
+      expanded,
+    );
+
+    // Collapsing: clear each data source so the virtual scroll resets cleanly
+    if (!expanded) {
+      groups.forEach((g) => g.dataSource.empty());
+    }
+
+    // Recompute every group's viewport height for the new state
+    this.groupHeights.set(groups.map((g) => this._groupViewportHeight(g)));
+
+    // Once the DOM reflects the new heights / rendered rows, let each viewport
+    // re-measure and (for expanded groups) trigger a data fetch.
+    afterNextRender(
+      () => {
+        for (const viewport of this.groupViewports()) {
+          viewport.checkViewportSize();
+          viewport.scrollToIndex(0);
+        }
+      },
+      { injector: this.injector },
+    );
   }
   /**
    * Height (px) for a group's virtual-scroll viewport.
@@ -212,6 +269,7 @@ export class PriorityList implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.menuService.deregisterListener(this._menuListener);
     this.destroy$.next();
     this.destroy$.complete();
     //this.priorityGrouped().forEach((group) => group.dataSource.disconnect());

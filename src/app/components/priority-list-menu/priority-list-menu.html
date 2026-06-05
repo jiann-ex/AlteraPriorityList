@@ -1,8 +1,16 @@
 <hlm-menubar>
+  <button [hlmMenubarTrigger]="viewMenu">View</button>
   <button [hlmMenubarTrigger]="columnsMenu">Columns Visibility</button>
   <button [hlmMenubarTrigger]="exportMenu">Export</button>
 </hlm-menubar>
 
+<ng-template #viewMenu>
+  <hlm-dropdown-menu>
+    <button hlmDropdownMenuItem (triggered)="expandAll()">Expand All</button>
+    <button hlmDropdownMenuItem (triggered)="collapseAll()">Collapse All</button>
+    <button hlmDropdownMenuItem (triggered)="reload()">Reload</button>
+  </hlm-dropdown-menu>
+</ng-template>
 <ng-template #columnsMenu>
   <hlm-dropdown-menu class="max-h-96 overflow-y-auto">
     @for (column of columns(); track column.key) {
@@ -20,7 +28,7 @@
 </ng-template>
 <ng-template #exportMenu>
   <hlm-dropdown-menu>
-    <button hlmDropdownMenuItem (click)="exportDialog.open()">Export Excel</button>
+    <button hlmDropdownMenuItem (triggered)="exportDialog.open()">Export Excel</button>
   </hlm-dropdown-menu>
 </ng-template>
 

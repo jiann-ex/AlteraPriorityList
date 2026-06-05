@@ -98,6 +98,17 @@ export class PriorityListMenuService {
     this.groupExpanded.update((prev) => ({ ...prev, [key]: !this.isGroupExpanded(key) }));
   }
 
+  /** Set the expand/collapse state for many groups at once; persisted to localStorage */
+  setGroupsExpanded(keys: string[], expanded: boolean): void {
+    this.groupExpanded.update((prev) => {
+      const next = { ...prev };
+      for (const key of keys) {
+        next[key] = expanded;
+      }
+      return next;
+    });
+  }
+
   private _loadColumns(): ColumnDef[] {
     const savedOrder = this._readJson<string[]>(COLUMN_ORDER_STORAGE_KEY);
     if (!savedOrder) return ALL_COLUMNS;

@@ -35,6 +35,17 @@ export class PriorityListMenu {
     this.menuService.toggleColumn(column.key);
   }
 
+  protected expandAll() {
+    this.menuService.expandAll();
+  }
+
+  protected collapseAll() {
+    this.menuService.collapseAll();
+  }
+  protected reload() {
+    this.menuService.reload();
+  }
+
   protected exportExcel(ctx: any) {
     this.exporting.set(true);
     this.service
